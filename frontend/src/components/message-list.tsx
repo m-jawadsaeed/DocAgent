@@ -11,31 +11,37 @@ interface Props {
 }
 
 export function MessageList({ messages, streamedAnswer, onRegenerate }: Props) {
+  const lastMessage = messages[messages.length - 1];
+
+  const shouldRenderStream =
+    streamedAnswer && lastMessage?.content !== streamedAnswer;
+
   return (
     <div
       className="
-      h-full
-      overflow-y-auto
-      px-6
-      py-8
-    "
+        h-full
+        overflow-y-auto
+        px-6
+        py-8
+      "
     >
       <div
         className="
-        max-w-4xl
-        mx-auto
-        space-y-6
-      "
+          max-w-4xl
+          mx-auto
+          space-y-6
+        "
       >
         {messages.map((message) => (
           <MessageItem key={message.id} message={message} />
         ))}
 
-        {streamedAnswer && (
+        {shouldRenderStream && (
           <div>
             <MessageItem
               message={{
                 id: "stream",
+                conversationId: "stream",
                 role: "ASSISTANT",
                 content: streamedAnswer,
                 createdAt: new Date().toISOString(),

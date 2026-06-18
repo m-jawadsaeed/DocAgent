@@ -24,6 +24,42 @@ export class ChatService {
 
   private readonly memory = new ConversationMemoryService();
 
+  private extractContent(content: unknown): string {
+    if (typeof content === "string") {
+      return content;
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .map((item: unknown) => {
+          if (typeof item === "object" && item !== null && "text" in item) {
+            return String((item as { text: string }).text);
+          }
+
+          if (typeof item === "string") {
+            return item;
+          }
+
+          return "";
+        })
+        .join("");
+    }
+
+    if (typeof content === "object" && content !== null) {
+      if ("text" in content) {
+        return String((content as { text: string }).text);
+      }
+
+      if ("content" in content) {
+        return String((content as { content: string }).content);
+      }
+
+      return JSON.stringify(content);
+    }
+
+    return "";
+  }
+
   public async ask(
     userId: string,
     conversationId: string,
@@ -75,7 +111,7 @@ export class ChatService {
 
     const lastMessage = graphState.messages?.[graphState.messages.length - 1];
 
-    const answer = lastMessage?.content?.toString() ?? "";
+    const answer = this.extractContent(lastMessage?.content);
 
     await this.messages.create(conversationId, MessageRole.ASSISTANT, answer);
 
@@ -123,7 +159,7 @@ export class ChatService {
       messages,
     });
 
-    let finalAnswer = "";
+    let latestAnswer = "";
 
     for await (const chunk of stream) {
       if (!chunk || typeof chunk !== "object") {
@@ -138,13 +174,13 @@ export class ChatService {
 
       const lastMessage = state.messages?.[state.messages.length - 1];
 
-      const content = lastMessage?.content?.toString() ?? "";
+      const content = this.extractContent(lastMessage?.content);
 
       if (!content) {
         continue;
       }
 
-      finalAnswer += content;
+      latestAnswer = content;
 
       yield content;
     }
@@ -154,7 +190,7 @@ export class ChatService {
     await this.messages.create(
       conversationId,
       MessageRole.ASSISTANT,
-      finalAnswer,
+      latestAnswer,
     );
 
     await this.memory.updateMemory(conversationId);

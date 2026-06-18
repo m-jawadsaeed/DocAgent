@@ -1,7 +1,16 @@
 import { useRef, useState } from "react";
 
 import { api } from "../api/client";
+
 import { useAuthStore } from "../store/auth.store";
+
+interface StreamResponse {
+  content?: string;
+
+  done?: boolean;
+
+  error?: string;
+}
 
 export function useStreamChat() {
   const [answer, setAnswer] = useState("");
@@ -22,6 +31,7 @@ export function useStreamChat() {
     }
 
     setAnswer("");
+
     setStreaming(true);
 
     const controller = new AbortController();
@@ -42,6 +52,7 @@ export function useStreamChat() {
 
           body: JSON.stringify({
             conversationId,
+
             question,
           }),
 
@@ -55,8 +66,12 @@ export function useStreamChat() {
         try {
           const data = await response.json();
 
-          message = data.message ?? message;
-        } catch {}
+          if (typeof data === "object" && data !== null && "message" in data) {
+            message = String(data.message);
+          }
+        } catch {
+          //
+        }
 
         throw new Error(message);
       }
@@ -78,37 +93,73 @@ export function useStreamChat() {
           break;
         }
 
-        const chunk = decoder.decode(value);
+        const chunk = decoder.decode(value, {
+          stream: true,
+        });
 
         const lines = chunk
           .split("\n")
           .filter((line) => line.startsWith("data:"));
 
         for (const line of lines) {
-          const token = line.replace("data:", "").trim();
+          const payload = line.replace("data:", "").trim();
 
-          if (!token || token === "[DONE]") {
+          if (!payload) {
             continue;
           }
 
-          accumulated += token;
+          try {
+            const parsed: StreamResponse = JSON.parse(payload);
 
-          setAnswer(accumulated);
+            if (parsed.done) {
+              setStreaming(false);
+
+              return;
+            }
+
+            if (parsed.error) {
+              setAnswer(`Error: ${parsed.error}`);
+
+              setStreaming(false);
+
+              return;
+            }
+
+            const text = parsed.content ?? "";
+
+            if (!text) {
+              continue;
+            }
+
+            /*
+              IMPORTANT FIX:
+              LangGraph streams
+              complete content each time.
+            */
+
+            accumulated = text;
+
+            setAnswer(accumulated);
+          } catch {
+            //
+          }
         }
       }
     } catch (error) {
-      console.error("Streaming error:", error);
-
       if (error instanceof Error && error.name !== "AbortError") {
         setAnswer(`Error: ${error.message}`);
       }
     } finally {
+      controllerRef.current = null;
+
       setStreaming(false);
     }
   }
 
   function stop() {
     controllerRef.current?.abort();
+
+    controllerRef.current = null;
 
     setStreaming(false);
   }
@@ -119,6 +170,7 @@ export function useStreamChat() {
     }
 
     setAnswer("");
+
     setStreaming(true);
 
     try {
@@ -126,9 +178,18 @@ export function useStreamChat() {
         conversationId,
       });
 
-      setAnswer(response.data.answer);
-    } catch {
-      setAnswer("Failed to regenerate response");
+      const answerText =
+        typeof response.data.answer === "string"
+          ? response.data.answer
+          : JSON.stringify(response.data.answer, null, 2);
+
+      setAnswer(answerText);
+    } catch (error) {
+      if (error instanceof Error) {
+        setAnswer(`Error: ${error.message}`);
+      } else {
+        setAnswer("Failed to regenerate response");
+      }
     } finally {
       setStreaming(false);
     }
@@ -136,9 +197,13 @@ export function useStreamChat() {
 
   return {
     answer,
+
     streaming,
+
     stream,
+
     stop,
+
     regenerate,
   };
 }

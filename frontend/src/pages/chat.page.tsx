@@ -33,6 +33,12 @@ export default function ChatPage() {
   const { data: messages = [] } = useMessages(conversationId);
 
   async function handleSend(question: string) {
+    const trimmedQuestion = question.trim();
+
+    if (!trimmedQuestion) {
+      return;
+    }
+
     let activeConversationId = conversationId;
 
     if (!activeConversationId) {
@@ -43,7 +49,7 @@ export default function ChatPage() {
       setConversationId(activeConversationId);
     }
 
-    await stream(activeConversationId, question);
+    await stream(activeConversationId, trimmedQuestion);
   }
 
   return (

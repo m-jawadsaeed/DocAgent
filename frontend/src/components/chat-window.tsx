@@ -10,9 +10,7 @@ interface Props {
   loading: boolean;
 
   onSend: (question: string) => Promise<void>;
-
   onStop: () => void;
-
   onRegenerate: () => void;
 }
 
@@ -26,18 +24,18 @@ export function ChatWindow({
 }: Props) {
   return (
     <div className="h-full flex flex-col bg-[#212121]">
-      {" "}
       <div className="flex-1 overflow-hidden">
-        {" "}
         <MessageList
           messages={messages}
           streamedAnswer={answer}
           onRegenerate={onRegenerate}
-        />{" "}
+        />
       </div>
+
       {loading && <TypingIndicator />}
+
       <ChatInput
-        disabled={loading}
+        disabled={false}
         loading={loading}
         onSend={onSend}
         onStop={onStop}

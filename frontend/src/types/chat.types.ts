@@ -7,12 +7,24 @@ export interface Conversation {
   updatedAt: string;
 }
 
+export interface Citation {
+  filename: string;
+  similarity: number;
+  excerpt: string;
+}
+
 export interface Message {
   id: string;
-  conversationId: string;
+
+  conversationId?: string;
+
   role: "USER" | "ASSISTANT";
+
   content: string;
+
   createdAt: string;
+
+  citations?: Citation[];
 }
 
 export type CreateConversationResponse = Conversation;

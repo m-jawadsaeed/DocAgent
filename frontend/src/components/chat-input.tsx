@@ -1,14 +1,12 @@
 import { useState } from "react";
+import type { KeyboardEvent } from "react";
 
 import { SendHorizontal } from "lucide-react";
 
 interface Props {
   disabled: boolean;
-
   loading: boolean;
-
   onSend: (question: string) => Promise<void>;
-
   onStop: () => void;
 }
 
@@ -16,28 +14,46 @@ export function ChatInput({ onSend, disabled, loading, onStop }: Props) {
   const [value, setValue] = useState("");
 
   async function submit() {
-    if (!value.trim()) {
+    const question = value.trim();
+
+    if (!question) {
       return;
     }
 
-    await onSend(value);
+    await onSend(question);
 
     setValue("");
   }
 
+  async function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+
+      if (!loading) {
+        await submit();
+      }
+    }
+  }
+
   return (
     <div className="border-t border-zinc-800 p-5 bg-[#171717]">
-      {" "}
       <div className="max-w-4xl mx-auto">
-        {" "}
         <div className="flex gap-3 items-end bg-[#2a2a2a] rounded-3xl p-3 border border-zinc-700">
           <textarea
             rows={1}
             value={value}
             disabled={disabled}
             onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Message AI Assistant..."
-            className="flex-1 bg-transparent resize-none outline-none px-2"
+            className="
+              flex-1
+              bg-transparent
+              resize-none
+              outline-none
+              px-2
+              max-h-40
+            "
           />
 
           {loading ? (
@@ -50,9 +66,20 @@ export function ChatInput({ onSend, disabled, loading, onStop }: Props) {
             </button>
           ) : (
             <button
+              type="button"
               onClick={submit}
               disabled={disabled}
-              className="h-10 w-10 rounded-full bg-white text-black flex items-center justify-center"
+              className="
+                h-10
+                w-10
+                rounded-full
+                bg-white
+                text-black
+                flex
+                items-center
+                justify-center
+                disabled:opacity-50
+              "
             >
               <SendHorizontal size={18} />
             </button>

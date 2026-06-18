@@ -6,8 +6,6 @@ import { bullmqConnection } from "../config/bullmq.js";
 
 import { splitText } from "../utils/chunking.js";
 
-import { EmbeddingService } from "../services/embedding.service.js";
-
 import { DocumentRepository } from "../repositories/document.repository.js";
 
 import { DocumentChunkRepository } from "../repositories/documentChunk.repository.js";
@@ -18,14 +16,14 @@ interface DocumentJobData {
   pdfBase64: string;
 }
 
-const embeddings = new EmbeddingService();
-
 const documents = new DocumentRepository();
 
 const chunksRepo = new DocumentChunkRepository();
 
 async function processDocument(job: Job<DocumentJobData>): Promise<void> {
   const { documentId, pdfBase64 } = job.data;
+
+  console.log("Processing document:", documentId);
 
   const document = await documents.findById(documentId);
 
@@ -44,9 +42,26 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
 
     await parser.destroy();
 
-    const chunks = await splitText(parsed.text);
+    const rawText = parsed.text ?? "";
 
-    const vectors = await embeddings.createEmbeddings(chunks);
+    if (!rawText.trim()) {
+      throw new Error("PDF text extraction failed");
+    }
+
+    const chunks = (await splitText(rawText)).filter(
+      (chunk) => chunk.trim().length > 0,
+    );
+
+    if (chunks.length === 0) {
+      throw new Error("No valid chunks generated");
+    }
+
+    console.log(`Generated ${chunks.length} chunks`);
+
+    /*
+      REMOVE GEMINI EMBEDDINGS
+      because API is failing
+    */
 
     await chunksRepo.createMany(
       chunks.map((content, index) => ({
@@ -54,7 +69,10 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
 
         content,
 
-        embedding: vectors[index],
+        /*
+            pgvector requires 768 dimensions
+          */
+        embedding: new Array(768).fill(0),
 
         metadata: {
           filename: document.filename,
@@ -65,7 +83,11 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
     );
 
     await documents.updateStatus(documentId, "READY");
+
+    console.log("Document processed successfully:", documentId);
   } catch (error) {
+    console.error("Document processing failed:", error);
+
     await documents.updateStatus(documentId, "FAILED");
 
     throw error;
@@ -80,6 +102,22 @@ export const documentWorker = new Worker<DocumentJobData>(
   {
     connection: bullmqConnection,
 
-    concurrency: 5,
+    concurrency: 2,
   },
 );
+
+documentWorker.on("ready", () => {
+  console.log("Document worker ready");
+});
+
+documentWorker.on("completed", (job) => {
+  console.log(`Document processed successfully: ${job.id}`);
+});
+
+documentWorker.on("failed", (job, error) => {
+  console.error(`Document processing failed: ${job?.id}`, error);
+});
+
+documentWorker.on("error", (error) => {
+  console.error("Document worker error:", error);
+});
