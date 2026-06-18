@@ -1,0 +1,198 @@
+generator client {
+provider = "prisma-client-js"
+previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+provider = "postgresql"
+url      = env("DATABASE_URL")
+extensions = [pgvector(map: "vector")]
+}
+
+model User {
+id           String   @id @default(uuid())
+email        String   @unique
+passwordHash String
+
+role         UserRole @default(USER)
+
+createdAt    DateTime @default(now())
+updatedAt    DateTime @updatedAt
+
+documents     Document[]
+conversations Conversation[]
+refreshTokens RefreshToken[]
+auditLogs     AuditLog[]
+toolUsages    ToolUsage[]
+}
+
+enum UserRole {
+USER
+ADMIN
+}
+
+model Document {
+id            String   @id @default(uuid())
+
+userId        String
+
+filename      String
+status        DocumentStatus
+
+extractedText String?
+summary       String?
+
+createdAt     DateTime @default(now())
+updatedAt     DateTime @updatedAt
+
+user          User @relation(fields: [userId], references: [id])
+
+chunks        DocumentChunk[]
+
+@@index([userId])
+}
+
+model DocumentChunk {
+id         String   @id @default(uuid())
+
+content    String
+metadata   Json?
+
+embedding  Unsupported("vector(768)")?
+
+documentId String
+
+document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+createdAt  DateTime @default(now())
+
+@@index([documentId])
+}
+
+model Conversation {
+id        String   @id @default(uuid())
+
+userId    String
+
+title     String
+
+pinned    Boolean  @default(false)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+user      User @relation(fields: [userId], references: [id])
+
+messages       Message[]
+memory         ConversationMemory?
+toolExecutions ToolExecution[]
+
+@@index([userId])
+}
+
+model Message {
+id             String @id @default(uuid())
+
+conversationId String
+
+role           MessageRole
+
+content        String
+
+citations      Json?
+
+createdAt      DateTime @default(now())
+
+conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+@@index([conversationId])
+}
+
+model RefreshToken {
+id        String   @id @default(uuid())
+
+token     String   @unique
+
+expiresAt DateTime
+
+userId    String
+
+createdAt DateTime @default(now())
+
+user      User @relation(fields: [userId], references: [id])
+
+@@index([userId])
+}
+
+model AuditLog {
+id        String   @id @default(uuid())
+
+userId    String
+
+action    String
+
+metadata  Json
+
+createdAt DateTime @default(now())
+
+user      User @relation(fields: [userId], references: [id])
+
+@@index([userId])
+}
+
+enum MessageRole {
+USER
+ASSISTANT
+SYSTEM
+}
+
+enum DocumentStatus {
+PROCESSING
+READY
+FAILED
+}
+
+model ConversationMemory {
+id             String @id @default(uuid())
+
+conversationId String @unique
+
+summary        String
+
+updatedAt      DateTime @updatedAt
+
+conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+@@index([conversationId])
+}
+
+model ToolExecution {
+id             String @id @default(uuid())
+
+conversationId String
+
+toolName       String
+
+input          Json
+output         Json
+
+createdAt      DateTime @default(now())
+
+conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+@@index([conversationId])
+}
+
+model ToolUsage {
+id         String @id @default(uuid())
+
+userId     String
+
+toolName   String
+
+createdAt  DateTime @default(now())
+
+user       User @relation(fields: [userId], references: [id])
+
+@@index([userId])
+}
