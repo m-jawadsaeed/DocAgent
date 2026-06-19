@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { Sparkles } from "lucide-react";
 
-import { ConversationList } from "../components/conversation-list";
+import { Sidebar } from "../components/sidebar";
 import { ChatWindow } from "../components/chat-window";
 import { DocumentDrawer } from "../components/document-drawer";
 
@@ -11,6 +11,9 @@ import { useConversations } from "../hooks/useConversations";
 import { useMessages } from "../hooks/useMessages";
 import { useStreamChat } from "../hooks/useStreamChat";
 import { useCreateConversation } from "../hooks/useCreateConversations";
+import { useDeleteConversation } from "../hooks/useDeleteConversation";
+import { useRenameConversation } from "../hooks/useRenameConversation";
+import { usePinConversation } from "../hooks/usePinConversation";
 
 import type { Message } from "../types/chat.types";
 
@@ -21,9 +24,17 @@ export default function ChatPage() {
 
   const { data: conversations = [] } = useConversations();
 
+  const { data: messages = [] } = useMessages(conversationId);
+
   const { answer, stream, streaming, stop, regenerate } = useStreamChat();
 
   const createConversation = useCreateConversation();
+
+  const renameConversation = useRenameConversation();
+
+  const deleteConversation = useDeleteConversation();
+
+  const pinConversation = usePinConversation();
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -32,8 +43,6 @@ export default function ChatPage() {
       setConversationId(id);
     }
   }, [searchParams]);
-
-  const { data: messages = [] } = useMessages(conversationId);
 
   const streamedMessages = useMemo<Message[]>(() => {
     if (!answer.trim()) {
@@ -78,6 +87,37 @@ export default function ChatPage() {
     await stream(activeConversationId, trimmedQuestion);
   }
 
+  async function handleRename(id: string) {
+    const title = window.prompt("Enter new conversation title");
+
+    if (!title?.trim()) {
+      return;
+    }
+
+    await renameConversation.mutateAsync({
+      conversationId: id,
+      title,
+    });
+  }
+
+  async function handleDelete(id: string) {
+    const confirmed = window.confirm("Delete this conversation?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteConversation.mutateAsync(id);
+
+    if (conversationId === id) {
+      setConversationId("");
+    }
+  }
+
+  async function handlePin(id: string) {
+    await pinConversation.mutateAsync(id);
+  }
+
   return (
     <div
       className="
@@ -88,13 +128,16 @@ export default function ChatPage() {
         overflow-hidden
       "
     >
-      <ConversationList
+      <Sidebar
         conversations={conversations}
         selected={conversationId}
         onSelect={setConversationId}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        onPin={handlePin}
       />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <div
           className="
             h-16
@@ -130,23 +173,9 @@ export default function ChatPage() {
             </div>
 
             <div>
-              <h1
-                className="
-                  text-base
-                  font-semibold
-                "
-              >
-                AI Document Assistant
-              </h1>
+              <h1 className="text-base font-semibold">AI Document Assistant</h1>
 
-              <p
-                className="
-                  text-xs
-                  text-zinc-400
-                "
-              >
-                RAG + Memory + Tools
-              </p>
+              <p className="text-xs text-zinc-400">RAG + Memory + Tools</p>
             </div>
           </div>
 

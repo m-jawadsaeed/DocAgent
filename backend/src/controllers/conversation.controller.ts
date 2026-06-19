@@ -80,13 +80,13 @@ export class ConversationController {
       return;
     }
 
-    const conversation = await prisma.conversation.create({
-      data: {
-        userId: req.user.userId,
+   const conversation = await prisma.conversation.create({
+     data: {
+       userId: req.user.userId,
 
-        title: "New Chat",
-      },
-    });
+       title: "",
+     },
+   });
 
     res.status(201).json(conversation);
   };

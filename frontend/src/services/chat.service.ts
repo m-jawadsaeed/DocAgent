@@ -17,14 +17,24 @@ export class ChatService {
     return response.data;
   }
 
-  public async renameConversation(id: string, title: string): Promise<void> {
-    await api.patch(`/conversations/${id}`, {
+  async renameConversation(conversationId: string, title: string) {
+    const response = await api.patch(`/conversations/${conversationId}`, {
       title,
     });
+
+    return response.data;
   }
 
-  public async deleteConversation(id: string): Promise<void> {
-    await api.delete(`/conversations/${id}`);
+  async pinConversation(conversationId: string) {
+    const response = await api.patch(`/conversations/${conversationId}/pin`);
+
+    return response.data;
+  }
+
+  async deleteConversation(conversationId: string) {
+    const response = await api.delete(`/conversations/${conversationId}`);
+
+    return response.data;
   }
 
   public async createConversation(): Promise<Conversation> {

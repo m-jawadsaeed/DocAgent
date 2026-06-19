@@ -3,6 +3,7 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { authService } from "../services/auth.service";
 import { useAuthStore } from "../store/auth.store";
+import { jwtDecode } from "jwt-decode";
 
 interface ErrorResponse {
   message: string;
@@ -15,10 +16,21 @@ export function useLogin() {
     mutationFn: authService.login,
 
     onSuccess: (data) => {
-      setAuth(data.user, data.accessToken);
+      const decoded = jwtDecode<{
+        userId: string;
+        email: string;
+      }>(data.accessToken);
+
+      setAuth(
+        {
+          id: decoded.userId,
+          email: decoded.email,
+        },
+        data.accessToken,
+      );
+
       toast.success("Login successful");
     },
-
     onError: (error: AxiosError<ErrorResponse>) => {
       toast.error(error.response?.data.message ?? "Invalid email or password");
     },

@@ -1,11 +1,17 @@
-import { api } from "../api/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { chatService } from "../services/chat.service";
 
 export function usePinConversation() {
-  async function pin(conversationId: string) {
-    await api.patch(`/conversations/${conversationId}/pin`);
-  }
+  const queryClient = useQueryClient();
 
-  return {
-    pin,
-  };
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      chatService.pinConversation(conversationId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["conversations"],
+      });
+    },
+  });
 }

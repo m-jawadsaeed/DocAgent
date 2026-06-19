@@ -1,10 +1,10 @@
 import { useState } from "react";
 
 import axios from "axios";
-import  type { AxiosProgressEvent } from "axios";
+import type { AxiosProgressEvent } from "axios";
 
 import { useAuthStore } from "../store/auth.store";
-
+import { useQueryClient } from "@tanstack/react-query";
 export interface UploadDocumentResponse {
   id: string;
 
@@ -17,7 +17,7 @@ export interface UploadDocumentResponse {
 
 export function useUploadDocument() {
   const [uploading, setUploading] = useState(false);
-
+  const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
 
   async function uploadDocument(file: File): Promise<UploadDocumentResponse> {
@@ -55,12 +55,17 @@ export function useUploadDocument() {
           },
         },
       );
+      await queryClient.invalidateQueries({
+        queryKey: ["documents"],
+      });
 
       return response.data;
     } finally {
       setUploading(false);
 
-      setProgress(0);
+      setTimeout(() => {
+        setProgress(0);
+      }, 1500);
     }
   }
 

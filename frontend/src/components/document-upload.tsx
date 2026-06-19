@@ -2,12 +2,12 @@ import type { ChangeEvent } from "react";
 
 import { Upload, FileText, CheckCircle2 } from "lucide-react";
 
+import type { UploadDocumentResponse } from "../hooks/useUploadDocument";
+
 interface Props {
   uploading: boolean;
-
   progress: number;
-
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (file: File) => Promise<UploadDocumentResponse>;
 }
 
 export function DocumentUpload({ uploading, progress, onUpload }: Props) {
@@ -85,24 +85,11 @@ export function DocumentUpload({ uploading, progress, onUpload }: Props) {
         </div>
 
         <div className="flex-1">
-          <p
-            className="
-              text-sm
-              font-medium
-              text-white
-            "
-          >
-            Upload PDF
+          <p className="text-sm font-semibold text-white">
+            Upload PDF Document
           </p>
 
-          <p
-            className="
-              text-xs
-              text-zinc-400
-            "
-          >
-            Drag & drop or click
-          </p>
+          <p className="text-xs text-zinc-400">Click to upload PDF files</p>
 
           {(uploading || progress > 0) && (
             <div className="mt-3">

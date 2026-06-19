@@ -4,15 +4,13 @@ import { useDocuments } from "../hooks/useDocuments";
 
 import { useUploadDocument } from "../hooks/useUploadDocument";
 
-import { UploadDropzone } from "./upload-dropzone";
-
+import { DocumentUpload } from "./document-upload";
 import { DocumentList } from "./document-list";
 
 export function DocumentDrawer() {
   const { data: documents = [] } = useDocuments();
 
-  const { upload } = useUploadDocument();
-
+const { uploadDocument, uploading, progress } = useUploadDocument();
   return (
     <aside
       className="
@@ -41,7 +39,11 @@ export function DocumentDrawer() {
       </div>
 
       <div className="p-4">
-        <UploadDropzone onUpload={upload} />
+        <DocumentUpload
+          uploading={uploading}
+          progress={progress}
+          onUpload={uploadDocument}
+        />{" "}
       </div>
 
       <div

@@ -1,13 +1,22 @@
-import { api } from "../api/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { chatService } from "../services/chat.service";
 
 export function useRenameConversation() {
-  async function rename(conversationId: string, title: string) {
-    await api.patch(`/conversations/${conversationId}`, {
-      title,
-    });
-  }
+  const queryClient = useQueryClient();
 
-  return {
-    rename,
-  };
+  return useMutation({
+    mutationFn: ({
+      conversationId,
+      title,
+    }: {
+      conversationId: string;
+      title: string;
+    }) => chatService.renameConversation(conversationId, title),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["conversations"],
+      });
+    },
+  });
 }

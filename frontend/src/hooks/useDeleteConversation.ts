@@ -1,11 +1,17 @@
-import { api } from "../api/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { chatService } from "../services/chat.service";
 
 export function useDeleteConversation() {
-  async function remove(conversationId: string) {
-    await api.delete(`/conversations/${conversationId}`);
-  }
+  const queryClient = useQueryClient();
 
-  return {
-    remove,
-  };
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      chatService.deleteConversation(conversationId),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["conversations"],
+      });
+    },
+  });
 }
