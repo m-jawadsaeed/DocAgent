@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Plus, LogOut, UserCircle2 } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 
 import axios from "axios";
 
