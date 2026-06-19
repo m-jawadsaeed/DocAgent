@@ -4,14 +4,6 @@ import { api } from "../api/client";
 
 import { useAuthStore } from "../store/auth.store";
 
-interface StreamResponse {
-  content?: string;
-
-  done?: boolean;
-
-  error?: string;
-}
-
 export function useStreamChat() {
   const [answer, setAnswer] = useState("");
 
@@ -52,7 +44,6 @@ export function useStreamChat() {
 
           body: JSON.stringify({
             conversationId,
-
             question,
           }),
 
@@ -61,19 +52,11 @@ export function useStreamChat() {
       );
 
       if (!response.ok) {
-        let message = "Failed to stream response";
+        const text = await response.text();
 
-        try {
-          const data = await response.json();
+        console.error(text);
 
-          if (typeof data === "object" && data !== null && "message" in data) {
-            message = String(data.message);
-          }
-        } catch {
-          //
-        }
-
-        throw new Error(message);
+        throw new Error(`Streaming failed: ${response.status}`);
       }
 
       if (!response.body) {
@@ -102,57 +85,41 @@ export function useStreamChat() {
           .filter((line) => line.startsWith("data:"));
 
         for (const line of lines) {
-          const payload = line.replace("data:", "").trim();
+          const raw = line.replace("data:", "").trim();
 
-          if (!payload) {
+          if (!raw || raw === "[DONE]") {
             continue;
           }
 
           try {
-            const parsed: StreamResponse = JSON.parse(payload);
-
-            if (parsed.done) {
-              setStreaming(false);
-
-              return;
-            }
+            const parsed = JSON.parse(raw);
 
             if (parsed.error) {
-              setAnswer(`Error: ${parsed.error}`);
-
-              setStreaming(false);
-
-              return;
+              throw new Error(parsed.error);
             }
 
-            const text = parsed.content ?? "";
+            if (parsed.token) {
+              accumulated = parsed.token;
 
-            if (!text) {
-              continue;
+              setAnswer(accumulated);
             }
-
-            /*
-              IMPORTANT FIX:
-              LangGraph streams
-              complete content each time.
-            */
-
-            accumulated = text;
-
-            setAnswer(accumulated);
-          } catch {
-            //
+          } catch (err) {
+            console.error("SSE parse error:", err);
           }
         }
       }
     } catch (error) {
-      if (error instanceof Error && error.name !== "AbortError") {
+      console.error("Streaming error:", error);
+
+      if (error instanceof Error) {
         setAnswer(`Error: ${error.message}`);
+      } else {
+        setAnswer("Failed to stream response");
       }
     } finally {
-      controllerRef.current = null;
-
       setStreaming(false);
+
+      controllerRef.current = null;
     }
   }
 
@@ -185,6 +152,8 @@ export function useStreamChat() {
 
       setAnswer(answerText);
     } catch (error) {
+      console.error(error);
+
       if (error instanceof Error) {
         setAnswer(`Error: ${error.message}`);
       } else {

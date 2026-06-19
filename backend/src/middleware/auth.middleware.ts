@@ -24,7 +24,6 @@ export function authenticate(
 
     req.user = {
       userId: payload.userId,
-
       email: payload.email,
     };
 

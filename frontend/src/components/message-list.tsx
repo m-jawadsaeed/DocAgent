@@ -11,10 +11,12 @@ interface Props {
 }
 
 export function MessageList({ messages, streamedAnswer, onRegenerate }: Props) {
-  const lastMessage = messages[messages.length - 1];
+  const hasDuplicate = messages.some(
+    (message) =>
+      message.role === "ASSISTANT" && message.content === streamedAnswer,
+  );
 
-  const shouldRenderStream =
-    streamedAnswer && lastMessage?.content !== streamedAnswer;
+  const shouldRenderStream = Boolean(streamedAnswer) && !hasDuplicate;
 
   return (
     <div
@@ -41,9 +43,13 @@ export function MessageList({ messages, streamedAnswer, onRegenerate }: Props) {
             <MessageItem
               message={{
                 id: "stream",
+
                 conversationId: "stream",
+
                 role: "ASSISTANT",
-                content: streamedAnswer,
+
+                content: streamedAnswer ?? "",
+
                 createdAt: new Date().toISOString(),
               }}
             />

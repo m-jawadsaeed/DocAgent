@@ -6,11 +6,15 @@ import { TypingIndicator } from "./typing-indicator";
 
 interface Props {
   messages: Message[];
+
   answer: string;
+
   loading: boolean;
 
   onSend: (question: string) => Promise<void>;
+
   onStop: () => void;
+
   onRegenerate: () => void;
 }
 
@@ -23,8 +27,20 @@ export function ChatWindow({
   onRegenerate,
 }: Props) {
   return (
-    <div className="h-full flex flex-col bg-[#212121]">
-      <div className="flex-1 overflow-hidden">
+    <div
+      className="
+        h-full
+        flex
+        flex-col
+        bg-[#212121]
+      "
+    >
+      <div
+        className="
+          flex-1
+          overflow-hidden
+        "
+      >
         <MessageList
           messages={messages}
           streamedAnswer={answer}
@@ -32,7 +48,7 @@ export function ChatWindow({
         />
       </div>
 
-      {loading && <TypingIndicator />}
+      {loading && answer.length === 0 && <TypingIndicator />}
 
       <ChatInput
         disabled={false}

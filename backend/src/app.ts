@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import swaggerRoutes from "./routes/swagger.routes.js";
 import swaggerUi from "swagger-ui-express";
-import healthRoutes from "./routes/health.routes.js"
+import healthRoutes from "./routes/health.routes.js";
 import routes from "./routes/index.js";
 import chatRoutes from "./routes/chat.routes.js";
 import { swaggerSpec } from "./config/swagger.js";
@@ -20,7 +20,17 @@ app.use(
   }),
 );
 app.use("/api", swaggerRoutes);
-app.use(compression());
+app.use(
+  compression({
+    filter: (req, res) => {
+      if (req.headers.accept === "text/event-stream") {
+        return false;
+      }
+
+      return compression.filter(req, res);
+    },
+  }),
+);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL,

@@ -121,7 +121,6 @@ export class ChatService {
 
     return answer;
   }
-
   public async *streamAnswer(
     userId: string,
     conversationId: string,
@@ -182,7 +181,7 @@ export class ChatService {
 
       latestAnswer = content;
 
-      yield content;
+      yield String(content);
     }
 
     await this.messages.create(conversationId, MessageRole.USER, question);

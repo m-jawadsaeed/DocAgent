@@ -2,90 +2,91 @@ import { Request, Response } from "express";
 
 import { ChatService } from "../services/chat.service.js";
 
-const service = new ChatService();
+const chatService = new ChatService();
 
-export class ChatController {
-  public ask = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { conversationId, question } = req.body;
+export async function streamChat(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
 
-      const userId = req.user!.userId;
-
-      const answer = await service.ask(userId, conversationId, question);
-
-      res.json({
-        answer,
+    if (!userId) {
+      res.status(401).json({
+        error: "Unauthorized",
       });
-    } catch (error) {
-      console.error(error);
 
-      res.status(500).json({
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
+      return;
     }
-  };
 
-  public regenerate = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const userId = req.user!.userId;
+    const { conversationId, question } = req.body;
 
-      const conversationId = req.body.conversationId;
-
-      const answer = await service.regenerate(userId, conversationId);
-
-      res.json({
-        answer,
+    if (!conversationId || !question) {
+      res.status(400).json({
+        error: "conversationId and question required",
       });
-    } catch (error) {
-      console.error(error);
 
-      res.status(500).json({
-        message:
-          error instanceof Error ? error.message : "Internal server error",
-      });
+      return;
     }
-  };
 
-  public stream = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { conversationId, question } = req.body;
+    res.setHeader("Content-Type", "text/event-stream");
 
-      const userId = req.user!.userId;
+    res.setHeader("Cache-Control", "no-cache");
 
-      res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Connection", "keep-alive");
 
-      res.setHeader("Cache-Control", "no-cache");
+    res.flushHeaders();
 
-      res.setHeader("Connection", "keep-alive");
+    const stream = chatService.streamAnswer(userId, conversationId, question);
 
-      const stream = service.streamAnswer(userId, conversationId, question);
-
-      for await (const token of stream) {
-        res.write(
-          `data:${JSON.stringify({
-            content: token,
-          })}\n\n`,
-        );
-      }
-
+    for await (const chunk of stream) {
       res.write(
-        `data:${JSON.stringify({
-          done: true,
+        `data: ${JSON.stringify({
+          token: chunk,
         })}\n\n`,
       );
-
-      res.end();
-    } catch (error) {
-      console.error(error);
-
-      res.write(
-        `data:${JSON.stringify({
-          error: error instanceof Error ? error.message : "Streaming failed",
-        })}\n\n`,
-      );
-
-      res.end();
     }
-  };
+
+    res.write("data: [DONE]\n\n");
+
+    res.end();
+  } catch (error) {
+    console.error(error);
+
+    res.write(
+      `data: ${JSON.stringify({
+        error: "Streaming failed",
+      })}\n\n`,
+    );
+
+    res.end();
+  }
+}
+
+export async function regenerateChat(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Unauthorized",
+      });
+
+      return;
+    }
+
+    const { conversationId } = req.body;
+
+    const answer = await chatService.regenerate(userId, conversationId);
+
+    res.json({
+      answer,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Regenerate failed",
+    });
+  }
 }

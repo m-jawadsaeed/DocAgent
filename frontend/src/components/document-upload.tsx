@@ -1,64 +1,172 @@
-import { useDropzone } from "react-dropzone";
+import type { ChangeEvent } from "react";
 
-import axios from "axios";
+import { Upload, FileText, CheckCircle2 } from "lucide-react";
 
-import { UploadCloud } from "lucide-react";
+interface Props {
+  uploading: boolean;
 
-import { useAuthStore } from "../store/auth.store";
+  progress: number;
 
-export function DocumentUpload() {
-  const token = useAuthStore((state) => state.accessToken);
+  onUpload: (file: File) => Promise<void>;
+}
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      "application/pdf": [".pdf"],
-    },
+export function DocumentUpload({ uploading, progress, onUpload }: Props) {
+  async function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
 
-    multiple: false,
+    if (!file) {
+      return;
+    }
 
-    onDrop: async (files) => {
-      if (!files.length) {
-        return;
-      }
+    await onUpload(file);
 
-      const formData = new FormData();
+    event.target.value = "";
+  }
 
-      formData.append("file", files[0]);
-
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/documents/upload`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-    },
-  });
+  const uploaded = !uploading && progress === 100;
 
   return (
     <div
-      {...getRootProps()}
-      className={`
-      rounded-xl
-      border-2
-      border-dashed
-      p-6
-      text-center
-      cursor-pointer
-      transition
-
-      ${isDragActive ? "border-white bg-zinc-900" : "border-zinc-700"}
-    `}
+      className="
+        bg-zinc-900
+        border
+        border-zinc-800
+        rounded-2xl
+        p-4
+        transition-all
+      "
     >
-      <input {...getInputProps()} />
+      <label
+        className="
+          flex
+          items-center
+          gap-4
+          cursor-pointer
+        "
+      >
+        <div
+          className="
+            h-12
+            w-12
+            rounded-xl
+            bg-zinc-800
+            flex
+            items-center
+            justify-center
+            shrink-0
+          "
+        >
+          {uploading ? (
+            <FileText
+              className="
+                h-5
+                w-5
+                text-blue-400
+                animate-pulse
+              "
+            />
+          ) : uploaded ? (
+            <CheckCircle2
+              className="
+                h-5
+                w-5
+                text-green-400
+              "
+            />
+          ) : (
+            <Upload
+              className="
+                h-5
+                w-5
+                text-zinc-300
+              "
+            />
+          )}
+        </div>
 
-      <UploadCloud size={28} className="mx-auto mb-3" />
+        <div className="flex-1">
+          <p
+            className="
+              text-sm
+              font-medium
+              text-white
+            "
+          >
+            Upload PDF
+          </p>
 
-      <div className="font-medium">Upload PDF</div>
+          <p
+            className="
+              text-xs
+              text-zinc-400
+            "
+          >
+            Drag & drop or click
+          </p>
 
-      <div className="text-sm text-zinc-500 mt-1">Drag & drop or click</div>
+          {(uploading || progress > 0) && (
+            <div className="mt-3">
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-between
+                  mb-1
+                "
+              >
+                <span
+                  className="
+                    text-[11px]
+                    text-zinc-400
+                  "
+                >
+                  {uploading ? "Uploading..." : "Completed"}
+                </span>
+
+                <span
+                  className="
+                    text-[11px]
+                    text-blue-400
+                    font-medium
+                  "
+                >
+                  {progress}%
+                </span>
+              </div>
+
+              <div
+                className="
+                  w-full
+                  h-2
+                  bg-zinc-800
+                  rounded-full
+                  overflow-hidden
+                "
+              >
+                <div
+                  className="
+                    h-full
+                    bg-blue-500
+                    transition-all
+                    duration-300
+                  "
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <input
+          type="file"
+          accept=".pdf"
+          className="hidden"
+          onChange={handleChange}
+          disabled={uploading}
+        />
+      </label>
     </div>
   );
 }
