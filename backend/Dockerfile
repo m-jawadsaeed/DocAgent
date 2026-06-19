@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
+COPY prisma ./prisma
+
 RUN npm config set fetch-retries 5
 
 RUN npm config set fetch-retry-factor 2
