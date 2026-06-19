@@ -4,15 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "worker": "tsx dist/workers/index.ts",
     "dev": "tsx watch src/server.ts",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
+    "worker": "node dist/workers/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "lint": "eslint .",
-    "postinstall": "prisma generate",
-    "build": "tsc"
-    
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
