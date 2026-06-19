@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, LogOut, MessageSquare } from "lucide-react";
+import { Plus, LogOut, MessageSquare, Files } from "lucide-react";
 import axios from "axios";
 
 import { useAuthStore } from "../store/auth.store";
+
 import { ConversationList } from "./conversation-list";
+import { DocumentUpload } from "./document-upload";
+import { DocumentList } from "./document-list";
+
+import { useDocuments } from "../hooks/useDocuments";
+import { useUploadDocument } from "../hooks/useUploadDocument";
 
 import type { Conversation } from "../types/chat.types";
 
@@ -26,9 +33,15 @@ export function Sidebar({
 }: Props) {
   const navigate = useNavigate();
 
+  const [tab, setTab] = useState<"chats" | "documents">("chats");
+
   const logout = useAuthStore((state) => state.logout);
   const token = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
+
+  const { data: documents = [] } = useDocuments();
+
+  const { uploadDocument, uploading, progress } = useUploadDocument();
 
   async function createChat() {
     const response = await axios.post(
@@ -52,7 +65,7 @@ export function Sidebar({
   return (
     <aside
       className="
-        w-[260px]
+        w-[280px]
         h-screen
         bg-[#171717]
         border-r
@@ -62,7 +75,7 @@ export function Sidebar({
         shrink-0
       "
     >
-      {/* Logo */}
+      {/* Header */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center gap-3 mb-4">
           <div
@@ -95,14 +108,14 @@ export function Sidebar({
             rounded-2xl
             bg-[#2f2f2f]
             hover:bg-[#3a3a3a]
-            text-white
             border
             border-zinc-700
-            transition
+            text-white
             flex
             items-center
             justify-center
             gap-2
+            transition
           "
         >
           <Plus size={18} />
@@ -110,25 +123,100 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Conversations */}
-      <div className="flex-1 overflow-hidden">
-        <ConversationList
-          conversations={conversations}
-          selected={selected}
-          onSelect={onSelect}
-          onRename={onRename}
-          onDelete={onDelete}
-          onPin={onPin}
-        />
+      {/* Mobile Tabs */}
+      <div className="px-4 pb-3 lg:hidden">
+        <div className="flex bg-zinc-900 rounded-xl p-1 border border-zinc-800">
+          <button
+            onClick={() => setTab("chats")}
+            className={`
+              flex-1
+              py-2
+              rounded-lg
+              flex
+              items-center
+              justify-center
+              gap-2
+              text-sm
+              transition
+              ${tab === "chats" ? "bg-zinc-800 text-white" : "text-zinc-500"}
+            `}
+          >
+            <MessageSquare size={15} />
+            Chats
+          </button>
+
+          <button
+            onClick={() => setTab("documents")}
+            className={`
+              flex-1
+              py-2
+              rounded-lg
+              flex
+              items-center
+              justify-center
+              gap-2
+              text-sm
+              transition
+              ${
+                tab === "documents" ? "bg-zinc-800 text-white" : "text-zinc-500"
+              }
+            `}
+          >
+            <Files size={15} />
+            Documents
+          </button>
+        </div>
       </div>
 
-      {/* User Section */}
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {/* Desktop */}
+        <div className="hidden lg:block h-full">
+          <ConversationList
+            conversations={conversations}
+            selected={selected}
+            onSelect={onSelect}
+            onRename={onRename}
+            onDelete={onDelete}
+            onPin={onPin}
+          />
+        </div>
+
+        {/* Mobile */}
+        <div className="lg:hidden h-full">
+          {tab === "chats" ? (
+            <ConversationList
+              conversations={conversations}
+              selected={selected}
+              onSelect={onSelect}
+              onRename={onRename}
+              onDelete={onDelete}
+              onPin={onPin}
+            />
+          ) : (
+            <div className="h-full flex flex-col">
+              <div className="p-3 border-b border-zinc-800">
+                <DocumentUpload
+                  uploading={uploading}
+                  progress={progress}
+                  onUpload={uploadDocument}
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3">
+                <DocumentList documents={documents} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* User */}
       <div
         className="
           border-t
           border-zinc-800
           p-3
-          bg-[#171717]
         "
       >
         <div className="flex items-center justify-between gap-3">

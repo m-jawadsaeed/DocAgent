@@ -213,3 +213,27 @@ Browser ReadableStream
    ▼
 Live UI Update
 ```
+Frontend
+   |
+socket.emit("chat:send")
+   |
+Backend Socket Gateway
+   |
+ChatService.streamToSocket()
+   |
+LangGraph
+   |
+Tool Calling
+   ├── document_search
+   ├── summarize_document
+   ├── list_user_documents
+   ├── memory
+   └── history
+   |
+RAG Retrieval
+   |
+Gemini Streaming
+   |
+socket.emit("chat:chunk")
+   |
+Frontend UI updates token-by-token
