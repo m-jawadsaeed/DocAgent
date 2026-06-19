@@ -21,18 +21,18 @@ export function MessageList({ messages, streamedAnswer, onRegenerate }: Props) {
   return (
     <div
       className="
-        h-full
-        overflow-y-auto
-        px-6
-        py-8
-      "
+    h-full
+    overflow-y-auto
+    px-3
+    md:px-6
+    py-10
+  "
     >
       <div
         className="
-          max-w-4xl
-          mx-auto
-          space-y-6
-        "
+      max-w-3xl
+      mx-auto
+    "
       >
         {messages.map((message) => (
           <MessageItem key={message.id} message={message} />

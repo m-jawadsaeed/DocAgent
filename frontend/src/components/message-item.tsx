@@ -19,82 +19,61 @@ export function MessageItem({ message }: Props) {
 
   return (
     <div
-      className={`w-full flex mb-6 ${isUser ? "justify-end" : "justify-start"}`}
+      className={`
+      w-full
+      flex
+      mb-8
+      ${isUser ? "justify-end" : "justify-start"}
+    `}
     >
       <div
-        className={`max-w-4xl flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}
+        className={`
+        w-full
+        max-w-3xl
+        flex
+        gap-4
+        ${isUser ? "justify-end" : ""}
+      `}
       >
-        <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
-          {isUser ? <User size={18} /> : <Bot size={18} />}
-        </div>
+        {!isUser && (
+          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
+            <Bot size={16} />
+          </div>
+        )}
 
-        <div className="flex flex-col gap-3">
+        <div className="flex-1">
           <div
-            className={`
-              rounded-2xl
-              px-4
-              py-3
-              text-sm
-              leading-7
-              overflow-hidden
-              ${isUser ? "bg-white text-black" : "bg-zinc-900 text-white"}
-            `}
+            className={
+              isUser
+                ? `
+                ml-auto
+                max-w-[80%]
+                rounded-3xl
+                bg-[#303030]
+                px-5
+                py-3
+              `
+                : `
+                text-white
+                leading-8
+              `
+            }
           >
             <MarkdownMessage content={content} />
           </div>
 
-          {!isUser && <CopyMessageButton text={content} />}
-
-          {!!message.citations?.length && (
-            <div className="space-y-3">
-              {message.citations.map((citation: Citation, index) => (
-                <div
-                  key={`${citation.filename}-${index}`}
-                  className="
-                      rounded-xl
-                      border
-                      border-zinc-700
-                      bg-zinc-900
-                      p-4
-                    "
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={18} className="text-blue-400" />
-
-                    <div className="font-medium">{citation.filename}</div>
-                  </div>
-
-                  <div className="mt-3">
-                    <span
-                      className="
-                          inline-flex
-                          rounded-full
-                          bg-green-500/20
-                          px-3
-                          py-1
-                          text-xs
-                          text-green-400
-                        "
-                    >
-                      Similarity {(citation.similarity * 100).toFixed(1)}%
-                    </span>
-                  </div>
-
-                  <div
-                    className="
-                        mt-3
-                        text-sm
-                        text-zinc-300
-                        leading-6
-                      "
-                  >
-                    {citation.excerpt}
-                  </div>
-                </div>
-              ))}
+          {!isUser && (
+            <div className="mt-2">
+              <CopyMessageButton text={content} />
             </div>
           )}
         </div>
+
+        {isUser && (
+          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center shrink-0">
+            <User size={16} />
+          </div>
+        )}
       </div>
     </div>
   );

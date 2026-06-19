@@ -27,25 +27,27 @@ export function ChatWindow({
   onRegenerate,
 }: Props) {
   return (
-    <div
-      className="
-        h-full
-        flex
-        flex-col
-        bg-[#212121]
-      "
-    >
-      <div
-        className="
-          flex-1
-          overflow-hidden
-        "
-      >
-        <MessageList
-          messages={messages}
-          streamedAnswer={answer}
-          onRegenerate={onRegenerate}
-        />
+    <div className="h-full flex flex-col bg-[#212121]">
+      <div className="flex-1 overflow-hidden">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl font-semibold mb-3">
+                How can I help today?
+              </h1>
+
+              <p className="text-zinc-500">
+                Ask questions about your uploaded documents
+              </p>
+            </div>
+          </div>
+        ) : (
+          <MessageList
+            messages={messages}
+            streamedAnswer={answer}
+            onRegenerate={onRegenerate}
+          />
+        )}
       </div>
 
       {loading && answer.length === 0 && <TypingIndicator />}

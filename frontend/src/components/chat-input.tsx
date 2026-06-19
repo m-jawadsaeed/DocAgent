@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { KeyboardEvent } from "react";
-
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Square, Paperclip } from "lucide-react";
 
 interface Props {
   disabled: boolean;
@@ -16,9 +15,7 @@ export function ChatInput({ onSend, disabled, loading, onStop }: Props) {
   async function submit() {
     const question = value.trim();
 
-    if (!question) {
-      return;
-    }
+    if (!question) return;
 
     await onSend(question);
 
@@ -36,55 +33,118 @@ export function ChatInput({ onSend, disabled, loading, onStop }: Props) {
   }
 
   return (
-    <div className="border-t border-zinc-800 p-5 bg-[#171717]">
+    <div
+      className="
+        px-3
+        md:px-6
+        pb-5
+        bg-[#212121]
+      "
+    >
       <div className="max-w-4xl mx-auto">
-        <div className="flex gap-3 items-end bg-[#2a2a2a] rounded-3xl p-3 border border-zinc-700">
+        <div
+          className="
+            rounded-[30px]
+            border
+            border-zinc-700
+            bg-[#2f2f2f]
+            shadow-xl
+          "
+        >
           <textarea
             rows={1}
             value={value}
             disabled={disabled}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message AI Assistant..."
+            placeholder="Ask anything..."
             className="
-              flex-1
+              w-full
               bg-transparent
               resize-none
               outline-none
-              px-2
-              max-h-40
+              px-5
+              pt-4
+              pb-2
+              text-white
+              max-h-48
+              placeholder:text-zinc-500
             "
           />
 
-          {loading ? (
+          <div
+            className="
+              flex
+              items-center
+              justify-between
+              p-3
+            "
+          >
             <button
-              type="button"
-              onClick={onStop}
-              className="px-5 py-3 rounded-xl bg-red-500 text-white"
-            >
-              Stop
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={submit}
-              disabled={disabled}
               className="
                 h-10
                 w-10
                 rounded-full
-                bg-white
-                text-black
+                hover:bg-zinc-700
                 flex
                 items-center
                 justify-center
-                disabled:opacity-50
+                text-zinc-400
+                transition
               "
             >
-              <SendHorizontal size={18} />
+              <Paperclip size={18} />
             </button>
-          )}
+
+            {loading ? (
+              <button
+                onClick={onStop}
+                className="
+                  h-10
+                  w-10
+                  rounded-full
+                  bg-white
+                  text-black
+                  flex
+                  items-center
+                  justify-center
+                "
+              >
+                <Square size={16} />
+              </button>
+            ) : (
+              <button
+                onClick={submit}
+                disabled={disabled}
+                className="
+                  h-10
+                  w-10
+                  rounded-full
+                  bg-white
+                  text-black
+                  flex
+                  items-center
+                  justify-center
+                  hover:scale-105
+                  transition
+                "
+              >
+                <SendHorizontal size={18} />
+              </button>
+            )}
+          </div>
         </div>
+
+        <p
+          className="
+            text-center
+            text-xs
+            text-zinc-500
+            mt-2
+          "
+        >
+          AI can make mistakes. Verify important information.
+        </p>
       </div>
     </div>
   );

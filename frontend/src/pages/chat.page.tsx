@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
-import { Sparkles } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { Sidebar } from "../components/sidebar";
 import { ChatWindow } from "../components/chat-window";
@@ -19,6 +18,8 @@ import type { Message } from "../types/chat.types";
 
 export default function ChatPage() {
   const [searchParams] = useSearchParams();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [conversationId, setConversationId] = useState("");
 
@@ -70,9 +71,7 @@ export default function ChatPage() {
   async function handleSend(question: string) {
     const trimmedQuestion = question.trim();
 
-    if (!trimmedQuestion) {
-      return;
-    }
+    if (!trimmedQuestion) return;
 
     let activeConversationId = conversationId;
 
@@ -90,9 +89,7 @@ export default function ChatPage() {
   async function handleRename(id: string) {
     const title = window.prompt("Enter new conversation title");
 
-    if (!title?.trim()) {
-      return;
-    }
+    if (!title?.trim()) return;
 
     await renameConversation.mutateAsync({
       conversationId: id,
@@ -103,9 +100,7 @@ export default function ChatPage() {
   async function handleDelete(id: string) {
     const confirmed = window.confirm("Delete this conversation?");
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     await deleteConversation.mutateAsync(id);
 
@@ -122,92 +117,118 @@ export default function ChatPage() {
     <div
       className="
         h-screen
-        flex
-        bg-[#181818]
+        bg-[#212121]
         text-white
+        flex
         overflow-hidden
       "
     >
-      <Sidebar
-        conversations={conversations}
-        selected={conversationId}
-        onSelect={setConversationId}
-        onRename={handleRename}
-        onDelete={handleDelete}
-        onPin={handlePin}
-      />
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex">
+        <Sidebar
+          conversations={conversations}
+          selected={conversationId}
+          onSelect={(id) => {
+            setConversationId(id);
+          }}
+          onRename={handleRename}
+          onDelete={handleDelete}
+          onPin={handlePin}
+        />
+      </div>
 
+      {/* Mobile Sidebar */}
+      {sidebarOpen && (
+        <>
+          <div
+            className="
+              fixed
+              inset-0
+              bg-black/70
+              z-40
+              lg:hidden
+            "
+            onClick={() => setSidebarOpen(false)}
+          />
+
+          <div
+            className="
+              fixed
+              top-0
+              left-0
+              bottom-0
+              z-50
+              lg:hidden
+            "
+          >
+            <Sidebar
+              conversations={conversations}
+              selected={conversationId}
+              onSelect={(id) => {
+                setConversationId(id);
+                setSidebarOpen(false);
+              }}
+              onRename={handleRename}
+              onDelete={handleDelete}
+              onPin={handlePin}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div
+        {/* Header */}
+        <header
           className="
-            h-16
+            h-14
             border-b
             border-zinc-800
-            bg-[#202020]
-            px-6
+            px-4
             flex
             items-center
             justify-between
             shrink-0
+            bg-[#212121]
           "
         >
           <div className="flex items-center gap-3">
-            <div
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
               className="
-                h-10
-                w-10
-                rounded-xl
-                bg-blue-500/20
-                flex
-                items-center
-                justify-center
+                lg:hidden
+                p-2
+                rounded-lg
+                hover:bg-zinc-800
               "
             >
-              <Sparkles
-                className="
-                  h-5
-                  w-5
-                  text-blue-400
-                "
-              />
-            </div>
+              {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
 
-            <div>
-              <h1 className="text-base font-semibold">AI Document Assistant</h1>
-
-              <p className="text-xs text-zinc-400">RAG + Memory + Tools</p>
-            </div>
+            <h1
+              className="
+                text-sm
+                md:text-base
+                font-medium
+              "
+            >
+              DocAgent
+            </h1>
           </div>
 
           <div
             className="
+              text-xs
+              text-zinc-500
               hidden
-              md:flex
-              items-center
-              gap-2
+              sm:block
             "
           >
-            <div
-              className="
-                h-2
-                w-2
-                rounded-full
-                bg-emerald-400
-                animate-pulse
-              "
-            />
-
-            <span
-              className="
-                text-xs
-                text-zinc-400
-              "
-            >
-              AI Connected
-            </span>
+            AI Document Assistant
           </div>
-        </div>
+        </header>
 
+        {/* Chat Area */}
         <div className="flex-1 overflow-hidden">
           <ChatWindow
             messages={streamedMessages}
@@ -220,6 +241,7 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* Right Knowledge Panel */}
       <DocumentDrawer />
     </div>
   );
