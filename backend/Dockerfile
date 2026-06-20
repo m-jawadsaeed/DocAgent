@@ -22,4 +22,4 @@ RUN npm run build
 
 EXPOSE 4000
 
-CMD ["node","dist/server.js"]
+CMD ["sh", "-c", "${START_COMMAND}"]
