@@ -1,7 +1,8 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { env } from "../config/env.js";
 
 const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
+  model: env.GEMINI_MODEL,
   temperature: 0,
 });
 

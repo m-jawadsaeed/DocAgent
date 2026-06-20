@@ -58,12 +58,11 @@ function shouldContinue(
 }
 
 export function buildGraph() {
-  const workflow = new StateGraph(MessagesAnnotation)
+  return new StateGraph(MessagesAnnotation)
     .addNode("chat", chatNode)
     .addNode("tools", toolNode)
     .addEdge(START, "chat")
     .addConditionalEdges("chat", shouldContinue)
-    .addEdge("tools", "chat");
-
-  return workflow.compile();
+    .addEdge("tools", "chat")
+    .compile();
 }

@@ -6,17 +6,17 @@ export function useSocketChat() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    socket.on("chat:chunk", (data) => {
-      setAnswer((prev) => prev + data.content);
+    socket.on("chat:token", (data) => {
+      setAnswer((prev) => prev + data.token);
     });
 
-    socket.on("chat:end", () => {
+    socket.on("chat:done", () => {
       setLoading(false);
     });
 
     return () => {
-      socket.off("chat:chunk");
-      socket.off("chat:end");
+      socket.off("chat:token");
+      socket.off("chat:done");
     };
   }, []);
 

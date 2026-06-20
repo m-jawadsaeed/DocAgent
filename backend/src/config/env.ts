@@ -17,6 +17,7 @@ const schema = z.object({
   ACCESS_TOKEN_EXPIRES_IN: z.string(),
   REFRESH_TOKEN_EXPIRES_IN: z.string(),
   GEMINI_API_KEY: z.string(),
+  GEMINI_MODEL: z.string(),
   MINIO_SECRET_KEY: z.string(),
   MINIO_ACCESS_KEY: z.string(),
   MINIO_PORT: z.string(),

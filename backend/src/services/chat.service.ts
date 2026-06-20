@@ -1,16 +1,9 @@
-import {
-  HumanMessage,
-  AIMessage,
-  BaseMessage,
-} from "@langchain/core/messages";
+import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 
-import {
-  Message,
-  MessageRole,
-} from "@prisma/client";
+import { Message, MessageRole } from "@prisma/client";
 
 import { buildGraph } from "../agents/graph.js";
-import { llm } from "../agents/llms.js";
+import { Socket } from "socket.io";
 import { ConversationRepository } from "../repositories/conversation.repository.js";
 import { MessageRepository } from "../repositories/message.repository.js";
 
@@ -58,7 +51,13 @@ export class ChatService {
       }
 
       if ("content" in content) {
-        return String((content as { content: string }).content);
+        return String(
+          (
+            content as {
+              content: string;
+            }
+          ).content,
+        );
       }
 
       return JSON.stringify(content);
@@ -72,59 +71,15 @@ export class ChatService {
     conversationId: string,
     question: string,
   ): Promise<string> {
-    const conversation = await this.conversations.findByIdAndUser(
-      conversationId,
-      userId,
-    );
+    let answer = "";
 
-    if (!conversation) {
-      throw new AppError("Conversation not found", 404);
-    }
-
-    const cacheKey = `${conversationId}:${question.trim().toLowerCase()}`;
-
-    const cached = await this.cache.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    setToolContext({
+    for await (const token of this.streamAnswer(
       userId,
       conversationId,
-    });
-
-    const history = await this.messages.getRecentHistory(conversationId, 20);
-
-    const langchainHistory: BaseMessage[] = history.map(
-      (message: Message): BaseMessage => {
-        if (message.role === MessageRole.USER) {
-          return new HumanMessage(message.content);
-        }
-
-        return new AIMessage(message.content);
-      },
-    );
-
-    await this.messages.create(conversationId, MessageRole.USER, question);
-
-    const result = await this.graph.invoke({
-      messages: [...langchainHistory, new HumanMessage(question)],
-    });
-
-    const graphState = result as {
-      messages?: BaseMessage[];
-    };
-
-    const lastMessage = graphState.messages?.[graphState.messages.length - 1];
-
-    const answer = this.extractContent(lastMessage?.content);
-
-    await this.messages.create(conversationId, MessageRole.ASSISTANT, answer);
-
-    await this.memory.updateMemory(conversationId);
-
-    await this.cache.set(cacheKey, answer);
+      question,
+    )) {
+      answer += token;
+    }
 
     return answer;
   }
@@ -143,6 +98,15 @@ export class ChatService {
       throw new AppError("Conversation not found", 404);
     }
 
+    const cacheKey = `${conversationId}:${question.trim().toLowerCase()}`;
+
+    const cached = await this.cache.get(cacheKey);
+
+    if (cached) {
+      yield cached;
+      return;
+    }
+
     setToolContext({
       userId,
       conversationId,
@@ -150,55 +114,58 @@ export class ChatService {
 
     const history = await this.messages.getRecentHistory(conversationId, 20);
 
-    const messages: BaseMessage[] = history.map((message: Message) => {
-      if (message.role === MessageRole.USER) {
-        return new HumanMessage(message.content);
-      }
+    const messages: BaseMessage[] = history
+      .reverse()
+      .map((message: Message): BaseMessage => {
+        if (message.role === MessageRole.USER) {
+          return new HumanMessage(message.content);
+        }
 
-      return new AIMessage(message.content);
-    });
+        return new AIMessage(message.content);
+      });
 
     messages.push(new HumanMessage(question));
 
     await this.messages.create(conversationId, MessageRole.USER, question);
 
-    /**
-     * STEP 1
-     * Execute LangGraph
-     * Tool Calling + RAG + Memory
-     */
-
-    const graphResult = await this.graph.invoke({
-      messages,
-    });
-
-    const graphState = graphResult as {
-      messages?: BaseMessage[];
-    };
-
-    const lastMessage = graphState.messages?.[graphState.messages.length - 1];
-
-    const finalPrompt = this.extractContent(lastMessage?.content);
-
-    /**
-     * STEP 2
-     * Gemini Token Streaming
-     */
-
-    const tokenStream = await llm.stream(finalPrompt);
-
     let finalAnswer = "";
+    let finalMessage = "";
 
-    for await (const chunk of tokenStream) {
-      const token = this.extractContent(chunk.content);
+    const stream = this.graph.streamEvents(
+      {
+        messages,
+      },
+      {
+        version: "v2",
+      },
+    );
 
-      if (!token) {
-        continue;
+    for await (const event of stream) {
+      if (event.event === "on_chat_model_stream") {
+        const chunk = event.data?.chunk;
+
+        const token = this.extractContent(chunk?.content);
+
+        if (!token) {
+          continue;
+        }
+
+        finalAnswer += token;
+
+        yield token;
       }
 
-      finalAnswer += token;
+      if (event.event === "on_chat_model_end") {
+        const output = event.data?.output;
 
-      yield token;
+        if (output && typeof output === "object" && "content" in output) {
+          finalMessage = this.extractContent(output.content);
+        }
+      }
+    }
+
+    if (!finalAnswer.trim()) {
+      finalAnswer = finalMessage;
     }
 
     await this.messages.create(
@@ -209,8 +176,56 @@ export class ChatService {
 
     await this.memory.updateMemory(conversationId);
 
-    const cacheKey = `${conversationId}:${question.trim().toLowerCase()}`;
-
     await this.cache.set(cacheKey, finalAnswer);
+  }
+  public async streamToSocket(
+    socket: Socket,
+    userId: string,
+    conversationId: string,
+    question: string,
+  ): Promise<void> {
+    let fullAnswer = "";
+
+    for await (const token of this.streamAnswer(
+      userId,
+      conversationId,
+      question,
+    )) {
+      fullAnswer += token;
+
+      socket.emit("chat:token", {
+        token,
+      });
+    }
+
+    socket.emit("chat:done", {
+      answer: fullAnswer,
+    });
+  }
+
+  public async regenerate(
+    userId: string,
+    conversationId: string,
+  ): Promise<string> {
+    const conversation = await this.conversations.findByIdAndUser(
+      conversationId,
+      userId,
+    );
+
+    if (!conversation) {
+      throw new AppError("Conversation not found", 404);
+    }
+
+    const history = await this.messages.getConversationMessages(conversationId);
+
+    const lastUserMessage = [...history]
+      .reverse()
+      .find((message) => message.role === MessageRole.USER);
+
+    if (!lastUserMessage) {
+      return "";
+    }
+
+    return this.ask(userId, conversationId, lastUserMessage.content);
   }
 }

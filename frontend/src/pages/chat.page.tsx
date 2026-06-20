@@ -51,11 +51,11 @@ export default function ChatPage() {
       setStreaming(true);
     });
 
-    socket.on("chat:chunk", (data) => {
+    socket.on("chat:token", (data) => {
       setAnswer((prev) => prev + data.content);
     });
 
-    socket.on("chat:end", () => {
+    socket.on("chat:done", () => {
       setStreaming(false);
     });
 
@@ -65,8 +65,8 @@ export default function ChatPage() {
 
     return () => {
       socket.off("chat:start");
-      socket.off("chat:chunk");
-      socket.off("chat:end");
+      socket.off("chat:token");
+      socket.off("chat:done");
       socket.off("chat:error");
     };
   }, []);
@@ -101,7 +101,10 @@ export default function ChatPage() {
     setAnswer("");
     setStreaming(true);
 
+    const userId = localStorage.getItem("userId");
+
     socket.emit("chat:send", {
+      userId,
       conversationId: activeConversationId,
       question,
     });
