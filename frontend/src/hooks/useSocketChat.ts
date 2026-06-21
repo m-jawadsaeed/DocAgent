@@ -1,35 +1,58 @@
 import { useEffect, useState } from "react";
-import { socket } from "../lib/socket";
+import { getSocket } from "../lib/socket";
 
 export function useSocketChat() {
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    socket.on("chat:token", (data) => {
-      setAnswer((prev) => prev + data.token);
-    });
+    const socket = getSocket();
 
-    socket.on("chat:done", () => {
+    if (!socket) {
+      console.warn("Socket not initialized");
+      return;
+    }
+
+    const handleToken = (data: { token: string }) => {
+      setAnswer((prev) => prev + data.token);
+    };
+
+    const handleDone = () => {
       setLoading(false);
-    });
+    };
+
+    const handleError = (error: unknown) => {
+      console.error("Chat Error:", error);
+      setLoading(false);
+    };
+
+    socket.on("chat:token", handleToken);
+    socket.on("chat:done", handleDone);
+    socket.on("chat:error", handleError);
 
     return () => {
-      socket.off("chat:token");
-      socket.off("chat:done");
+      socket.off("chat:token", handleToken);
+      socket.off("chat:done", handleDone);
+      socket.off("chat:error", handleError);
     };
   }, []);
 
-  function send(userId: string, conversationId: string, question: string) {
+  const send = (conversationId: string, question: string) => {
+    const socket = getSocket();
+
+    if (!socket) {
+      console.error("Socket not connected");
+      return;
+    }
+
     setAnswer("");
     setLoading(true);
 
     socket.emit("chat:send", {
-      userId,
       conversationId,
       question,
     });
-  }
+  };
 
   return {
     answer,

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { authService } from "../services/auth.service";
 import { useAuthStore } from "../store/auth.store";
 import { jwtDecode } from "jwt-decode";
-
+import { connectSocket } from "../lib/socket";
 interface ErrorResponse {
   message: string;
 }
@@ -28,6 +28,8 @@ export function useLogin() {
         },
         data.accessToken,
       );
+
+      connectSocket();
 
       toast.success("Login successful");
     },

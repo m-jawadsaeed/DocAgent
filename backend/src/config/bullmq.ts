@@ -1,6 +1,9 @@
 import { env } from "./env.js";
 
 export const bullmqConnection = {
-  url: env.REDIS_URL,
+  host: env.REDIS_HOST,
+
+  port: Number(env.REDIS_PORT),
+
   maxRetriesPerRequest: null,
 };

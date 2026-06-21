@@ -8,9 +8,11 @@ export function registerChatSocket() {
   io.on("connection", (socket) => {
     console.log(` Socket Connected: ${socket.id}`);
 
-    socket.on("chat:send", async ({ userId, conversationId, question }) => {
+    socket.on("chat:send", async ({ conversationId, question }) => {
       try {
-        if (!userId || !conversationId || !question) {
+        const userId = socket.data.userId as string;
+
+        if (!conversationId || !question) {
           socket.emit("chat:error", {
             message: "Missing required fields",
           });

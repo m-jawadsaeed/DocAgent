@@ -14,7 +14,7 @@ export function SourcePanel({ citations }: Props) {
       className="
      space-y-3
      overflow-y-auto
-     max-h-[400px]
+     max-h-100
    "
     >
       {citations.map((citation, index) => (

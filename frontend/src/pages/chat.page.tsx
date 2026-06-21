@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-
-import { socket } from "../lib/socket";
-
+import { getSocket } from "../lib/socket";
 import { Sidebar } from "../components/sidebar";
 import { ChatWindow } from "../components/chat-window";
 import { DocumentDrawer } from "../components/document-drawer";
@@ -46,20 +44,25 @@ export default function ChatPage() {
    * SOCKET EVENTS
    */
   useEffect(() => {
+    const socket = getSocket();
+
+    if (!socket) return;
+
     socket.on("chat:start", () => {
       setAnswer("");
       setStreaming(true);
     });
 
     socket.on("chat:token", (data) => {
-      setAnswer((prev) => prev + data.content);
+      setAnswer((prev) => prev + data.token);
     });
 
     socket.on("chat:done", () => {
       setStreaming(false);
     });
 
-    socket.on("chat:error", () => {
+    socket.on("chat:error", (err) => {
+      console.error(err);
       setStreaming(false);
     });
 
@@ -86,7 +89,12 @@ export default function ChatPage() {
       : messages;
 
   async function handleSend(question: string) {
-    if (!question.trim()) return;
+    const socket = getSocket();
+
+    if (!socket) {
+      console.error("Socket not connected");
+      return;
+    }
 
     let activeConversationId = conversationId;
 
@@ -101,10 +109,7 @@ export default function ChatPage() {
     setAnswer("");
     setStreaming(true);
 
-    const userId = localStorage.getItem("userId");
-
     socket.emit("chat:send", {
-      userId,
       conversationId: activeConversationId,
       question,
     });
@@ -159,7 +164,20 @@ export default function ChatPage() {
             onClick={() => setSidebarOpen(false)}
           />
 
-          <div className="fixed top-0 left-0 bottom-0 z-50 lg:hidden">
+          <div
+            className={`
+            fixed
+            top-0
+            left-0
+            bottom-0
+            z-50
+            lg:hidden
+            transform
+            transition-transform
+            duration-300
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          `}
+          >
             <Sidebar
               conversations={conversations}
               selected={conversationId}
@@ -201,7 +219,12 @@ export default function ChatPage() {
             loading={streaming}
             onSend={handleSend}
             onStop={() => {
-              socket.emit("chat:stop");
+              const socket = getSocket();
+
+              if (socket) {
+                socket.emit("chat:stop");
+              }
+
               setStreaming(false);
             }}
             onRegenerate={() => {}}

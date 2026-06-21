@@ -130,7 +130,7 @@ export class ChatService {
 
     let finalAnswer = "";
     let finalMessage = "";
-
+    console.log("Starting graph stream");
     const stream = this.graph.streamEvents(
       {
         messages,
@@ -141,6 +141,7 @@ export class ChatService {
     );
 
     for await (const event of stream) {
+      console.log("EVENT:", event.event);
       if (event.event === "on_chat_model_stream") {
         const chunk = event.data?.chunk;
 
@@ -184,6 +185,8 @@ export class ChatService {
     conversationId: string,
     question: string,
   ): Promise<void> {
+    console.log("streamToSocket started");
+
     let fullAnswer = "";
 
     for await (const token of this.streamAnswer(
@@ -191,12 +194,16 @@ export class ChatService {
       conversationId,
       question,
     )) {
+      console.log("TOKEN:", token);
+
       fullAnswer += token;
 
       socket.emit("chat:token", {
         token,
       });
     }
+
+    console.log("DONE", fullAnswer);
 
     socket.emit("chat:done", {
       answer: fullAnswer,

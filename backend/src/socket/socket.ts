@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 
+import { verifyAccessToken } from "../utils/jwt.js";
+
 export let io: Server;
 
 export function initializeSocket(server: HttpServer) {
@@ -11,12 +13,32 @@ export function initializeSocket(server: HttpServer) {
     },
   });
 
-  io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id);
+  io.use((socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token;
 
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
-    });
+      console.log("Socket token:", token);
+
+      if (!token) {
+        return next(new Error("Unauthorized"));
+      }
+
+      const payload = verifyAccessToken(token);
+
+      socket.data.userId = payload.userId;
+
+      console.log("Authenticated:", payload.userId);
+
+      next();
+    } catch (error) {
+      console.error("Socket auth error:", error);
+
+      next(new Error("Unauthorized"));
+    }
+  });
+
+  io.on("connection", (socket) => {
+    console.log("Socket connected:", socket.id, socket.data.userId);
   });
 
   return io;

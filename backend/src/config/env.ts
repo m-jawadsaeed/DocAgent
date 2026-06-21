@@ -7,8 +7,9 @@ const schema = z.object({
   PORT: z.string(),
 
   DATABASE_URL: z.string(),
-
   REDIS_URL: z.string(),
+  REDIS_HOST: z.string(),
+  REDIS_PORT: z.string(),
 
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),

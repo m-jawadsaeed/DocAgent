@@ -1,6 +1,5 @@
-import { User, Bot, FileText } from "lucide-react";
-
-import type { Message, Citation } from "../types/chat.types";
+import { User, Bot } from "lucide-react";
+import type { Message } from "../types/chat.types";
 
 import { MarkdownMessage } from "./markdown-message";
 import { CopyMessageButton } from "./copy-message-button";
@@ -19,61 +18,74 @@ export function MessageItem({ message }: Props) {
 
   return (
     <div
-      className={`
-      w-full
-      flex
-      mb-8
-      ${isUser ? "justify-end" : "justify-start"}
-    `}
+      className={`         w-full
+        flex
+        mb-6
+        ${isUser ? "justify-end" : "justify-start"}
+      `}
     >
       <div
-        className={`
-        w-full
-        max-w-3xl
-        flex
-        gap-4
-        ${isUser ? "justify-end" : ""}
-      `}
+        className={`           flex
+          items-end
+          gap-3
+          max-w-[85%]
+          ${isUser ? "flex-row-reverse" : ""}
+        `}
       >
-        {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
-            <Bot size={16} />
-          </div>
-        )}
-
-        <div className="flex-1">
+        {/* Avatar */}
+        <div
+          className={`             h-8
+            w-8
+            rounded-full
+            flex
+            items-center
+            justify-center
+            shrink-0
+            ${isUser ? "bg-zinc-700" : "bg-emerald-600"}
+          `}
+        >
+          {isUser ? <User size={16} /> : <Bot size={16} />}{" "}
+        </div>
+        {/* Message */}
+        <div>
           <div
             className={
               isUser
                 ? `
-                ml-auto
-                max-w-[80%]
-                rounded-3xl
-                bg-[#303030]
-                px-5
-                py-3
-              `
+              inline-block
+              bg-[#2f2f2f]
+              rounded-3xl
+              rounded-br-md
+              px-4
+              py-3
+              text-white
+              break-words
+              shadow-sm
+              max-w-full
+            `
                 : `
-                text-white
-                leading-8
-              `
+              inline-block
+              bg-[#262626]
+              rounded-3xl
+              rounded-bl-md
+              px-4
+              py-3
+              text-white
+              break-words
+              shadow-sm
+              max-w-full
+            `
             }
           >
             <MarkdownMessage content={content} />
           </div>
 
           {!isUser && (
-            <div className="mt-2">
+            <div className="mt-2 ml-1">
               <CopyMessageButton text={content} />
             </div>
           )}
         </div>
-
-        {isUser && (
-          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center shrink-0">
-            <User size={16} />
-          </div>
-        )}
       </div>
     </div>
   );

@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, LogOut, MessageSquare, Files } from "lucide-react";
+
+import {
+  Plus,
+  LogOut,
+  MessageSquare,
+  Files,
+  ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import axios from "axios";
 
 import { useAuthStore } from "../store/auth.store";
@@ -34,13 +43,13 @@ export function Sidebar({
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<"chats" | "documents">("chats");
-
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const logout = useAuthStore((state) => state.logout);
   const token = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
 
   const { data: documents = [] } = useDocuments();
-
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { uploadDocument, uploading, progress } = useUploadDocument();
 
   async function createChat() {
@@ -64,16 +73,18 @@ export function Sidebar({
 
   return (
     <aside
-      className="
-        w-[280px]
-        h-screen
-        bg-[#171717]
-        border-r
-        border-zinc-800
-        flex
-        flex-col
-        shrink-0
-      "
+      className={`
+      h-screen
+      bg-[#171717]
+      border-r
+      border-zinc-800
+      flex
+      flex-col
+      shrink-0
+      transition-all
+      duration-300
+      ${sidebarOpen ? "w-70" : "w-17.5"}
+    `}
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-3">
@@ -212,54 +223,102 @@ export function Sidebar({
       </div>
 
       {/* User */}
+      {/* User */}
       <div
         className="
-          border-t
-          border-zinc-800
-          p-3
-        "
+    border-t
+    border-zinc-800
+    p-3
+  "
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="
+        w-full
+        flex
+        items-center
+        justify-between
+        gap-3
+        p-2
+        rounded-xl
+        hover:bg-zinc-800
+        transition
+      "
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className="
+            h-10
+            w-10
+            rounded-full
+            bg-zinc-700
+            flex
+            items-center
+            justify-center
+            text-white
+            font-semibold
+            shrink-0
+          "
+              >
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </div>
+
+              <div className="min-w-0 text-left">
+                <p className="text-sm text-white truncate">
+                  {user?.email || "User"}
+                </p>
+
+                <p className="text-xs text-zinc-500">Free Plan</p>
+              </div>
+            </div>
+
+            <ChevronDown
+              size={16}
+              className={`
+          text-zinc-500
+          transition-transform
+          ${userMenuOpen ? "rotate-180" : ""}
+        `}
+            />
+          </button>
+
+          {userMenuOpen && (
             <div
               className="
-                h-10
-                w-10
-                rounded-full
-                bg-zinc-700
-                flex
-                items-center
-                justify-center
-                text-white
-                font-semibold
-                shrink-0
-              "
+          absolute
+          bottom-full
+          left-0
+          mb-2
+          w-full
+          bg-[#202020]
+          border
+          border-zinc-700
+          rounded-xl
+          overflow-hidden
+          shadow-xl
+          z-50
+        "
             >
-              {user?.email?.charAt(0).toUpperCase() || "U"}
+              <button
+                onClick={handleLogout}
+                className="
+            w-full
+            flex
+            items-center
+            gap-3
+            px-4
+            py-3
+            text-red-400
+            hover:bg-zinc-800
+            transition
+          "
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
             </div>
-
-            <div className="min-w-0">
-              <p className="text-sm text-white truncate">
-                {user?.email || "User"}
-              </p>
-
-              <p className="text-xs text-zinc-500">Free Plan</p>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="
-              p-2
-              rounded-lg
-              hover:bg-zinc-800
-              text-zinc-400
-              hover:text-red-400
-              transition
-            "
-          >
-            <LogOut size={18} />
-          </button>
+          )}
         </div>
       </div>
     </aside>
