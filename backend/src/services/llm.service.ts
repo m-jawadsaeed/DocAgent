@@ -6,6 +6,7 @@ import { summarizeDocumentTool } from "../tools/summarizeDocument.tool.js";
 import { getConversationHistoryTool } from "../tools/getConversationHistory.tool.js";
 import { getConversationMemoryTool } from "../tools/getConversationMemory.tool.js";
 import { listUserDocumentsTool } from "../tools/listUserDocuments.tool.js";
+import { summarizeLatestDocumentTool } from "../tools/summarize_latest_document.js";
 
 export const llm = new ChatGoogleGenerativeAI({
   apiKey: env.GEMINI_API_KEY,
@@ -24,6 +25,7 @@ export const tools = [
   getConversationHistoryTool,
   getConversationMemoryTool,
   listUserDocumentsTool,
+  summarizeLatestDocumentTool,
 ];
 
 export const llmWithTools = llm.bindTools(tools);

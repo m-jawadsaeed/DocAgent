@@ -114,7 +114,7 @@ export class ChatService {
 
     const history = await this.messages.getRecentHistory(conversationId, 20);
 
-    const messages: BaseMessage[] = history
+    const messages: BaseMessage[] = [...history]
       .reverse()
       .map((message: Message): BaseMessage => {
         if (message.role === MessageRole.USER) {
@@ -130,7 +130,6 @@ export class ChatService {
 
     let finalAnswer = "";
     let finalMessage = "";
-    console.log("Starting graph stream");
     const stream = this.graph.streamEvents(
       {
         messages,
@@ -141,7 +140,6 @@ export class ChatService {
     );
 
     for await (const event of stream) {
-      console.log("EVENT:", event.event);
       if (event.event === "on_chat_model_stream") {
         const chunk = event.data?.chunk;
 
@@ -164,7 +162,6 @@ export class ChatService {
         }
       }
     }
-
     if (!finalAnswer.trim()) {
       finalAnswer = finalMessage;
     }
@@ -194,17 +191,12 @@ export class ChatService {
       conversationId,
       question,
     )) {
-      console.log("TOKEN:", token);
-
       fullAnswer += token;
 
       socket.emit("chat:token", {
         token,
       });
     }
-
-    console.log("DONE", fullAnswer);
-
     socket.emit("chat:done", {
       answer: fullAnswer,
     });

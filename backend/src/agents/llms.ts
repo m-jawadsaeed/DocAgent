@@ -7,7 +7,8 @@ import { summarizeDocumentTool } from "../tools/summarizeDocument.tool.js";
 import { getConversationHistoryTool } from "../tools/getConversationHistory.tool.js";
 import { getConversationMemoryTool } from "../tools/getConversationMemory.tool.js";
 import { listUserDocumentsTool } from "../tools/listUserDocuments.tool.js";
-
+import { summarizeLatestDocumentTool } from "../tools/summarize_latest_document.js";
+console.log(env.GEMINI_API_KEY?.slice(0, 10));
 export const llm = new ChatGoogleGenerativeAI({
   apiKey: env.GEMINI_API_KEY,
 
@@ -25,9 +26,10 @@ export const llm = new ChatGoogleGenerativeAI({
 export const llmWithTools = llm.bindTools([
   documentSearchTool,
   summarizeDocumentTool,
+  summarizeLatestDocumentTool,
+  listUserDocumentsTool,
   getConversationHistoryTool,
   getConversationMemoryTool,
-  listUserDocumentsTool,
 ]);
 
 export const SYSTEM_PROMPT = `
@@ -87,4 +89,21 @@ If no sources exist, write:
 ### Sources
 
 No supporting documents found.
+
+
+### Sources
+
+When a user asks:
+
+- summarize pdf
+- summarize document
+- give me summary
+- summarize uploaded file
+- summary of this document
+
+and no specific document is mentioned,
+
+call summarize_latest_document.
+
+Do not ask for document id if only one uploaded document exists.
 `;
