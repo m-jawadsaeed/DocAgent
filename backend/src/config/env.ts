@@ -20,6 +20,7 @@ const schema = z.object({
   MINIO_ACCESS_KEY: z.string(),
   MINIO_PORT: z.string(),
   MINIO_ENDPOINT: z.string(),
+  FRONTEND_URL: z.string(),
 });
 
 export const env = schema.parse(process.env);

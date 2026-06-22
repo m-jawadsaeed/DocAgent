@@ -2,13 +2,13 @@ import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 
 import { verifyAccessToken } from "../utils/jwt.js";
-
+import { env } from "../config/env.js";
 export let io: Server;
 
 export function initializeSocket(server: HttpServer) {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL,
+      origin: env.FRONTEND_URL,
       credentials: true,
     },
   });
