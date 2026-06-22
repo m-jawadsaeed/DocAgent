@@ -29,7 +29,7 @@ export function ChatWindow({
   return (
     <div className="h-full flex flex-col bg-[#212121]">
       <div className="flex-1 overflow-hidden">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !answer ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <h1 className="text-4xl font-semibold mb-3">

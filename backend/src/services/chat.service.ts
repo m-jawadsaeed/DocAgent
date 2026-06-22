@@ -1,6 +1,7 @@
 import { HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
 
 import { Message, MessageRole } from "@prisma/client";
+  // import { io } from "../socket/socket.js";
 
 import { buildGraph } from "../agents/graph.js";
 import { Socket } from "socket.io";
@@ -103,7 +104,14 @@ export class ChatService {
     const cached = await this.cache.get(cacheKey);
 
     if (cached) {
-      yield cached;
+      const words = cached.split(" ");
+
+      for (const word of words) {
+        yield word + " ";
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
       return;
     }
 
@@ -176,13 +184,14 @@ export class ChatService {
 
     await this.cache.set(cacheKey, finalAnswer);
   }
+
   public async streamToSocket(
     socket: Socket,
     userId: string,
     conversationId: string,
     question: string,
   ): Promise<void> {
-    console.log("streamToSocket started");
+    socket.emit("chat:start");
 
     let fullAnswer = "";
 
@@ -191,12 +200,14 @@ export class ChatService {
       conversationId,
       question,
     )) {
+
       fullAnswer += token;
 
       socket.emit("chat:token", {
         token,
       });
     }
+
     socket.emit("chat:done", {
       answer: fullAnswer,
     });

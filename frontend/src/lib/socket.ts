@@ -15,12 +15,17 @@ export function connectSocket() {
     return socket;
   }
 
-  socket = io(import.meta.env.VITE_SOCKET_URL, {
-    transports: ["websocket"],
-    auth: {
-      token,
-    },
-  });
+ socket = io(import.meta.env.VITE_SOCKET_URL, {
+   transports: ["websocket"],
+
+   reconnection: true,
+   reconnectionAttempts: Infinity,
+   reconnectionDelay: 1000,
+
+   auth: {
+     token,
+   },
+ });
 
   socket.on("connect", () => {
     console.log("SOCKET CONNECTED", socket?.id);
@@ -38,5 +43,9 @@ export function connectSocket() {
 }
 
 export function getSocket() {
+  if (!socket) {
+    return connectSocket();
+  }
+
   return socket;
 }

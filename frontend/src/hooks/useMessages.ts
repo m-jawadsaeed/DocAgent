@@ -5,9 +5,10 @@ import { chatService } from "../services/chat.service";
 export function useMessages(conversationId: string) {
   return useQuery({
     queryKey: ["messages", conversationId],
-
     queryFn: () => chatService.getMessages(conversationId),
-
-    enabled: conversationId.length > 0,
+    enabled: !!conversationId,
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   });
 }
