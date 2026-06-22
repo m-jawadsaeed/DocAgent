@@ -191,26 +191,36 @@ export class ChatService {
     conversationId: string,
     question: string,
   ): Promise<void> {
-    socket.emit("chat:start");
+    try {
+      socket.emit("chat:start");
 
-    let fullAnswer = "";
+      let fullAnswer = "";
 
-    for await (const token of this.streamAnswer(
-      userId,
-      conversationId,
-      question,
-    )) {
+      for await (const token of this.streamAnswer(
+        userId,
+        conversationId,
+        question,
+      )) {
+        fullAnswer += token;
 
-      fullAnswer += token;
+        socket.emit("chat:token", {
+          token,
+        });
+      }
 
-      socket.emit("chat:token", {
-        token,
+      socket.emit("chat:done", {
+        answer: fullAnswer,
+      });
+    } catch (error) {
+      console.error("STREAM ERROR:", error);
+
+      socket.emit("chat:error", {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate response",
       });
     }
-
-    socket.emit("chat:done", {
-      answer: fullAnswer,
-    });
   }
 
   public async regenerate(
