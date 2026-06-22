@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { KeyboardEvent } from "react";
-import { SendHorizontal, Square, Paperclip } from "lucide-react";
+import { SendHorizontal, Square } from "lucide-react";
 
 interface Props {
   disabled: boolean;

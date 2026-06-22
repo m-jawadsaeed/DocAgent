@@ -1,9 +1,5 @@
-import { env } from "./env.js";
+import {Redis} from "ioredis";
 
-export const bullmqConnection = {
-  host: env.REDIS_HOST,
-
-  port: Number(env.REDIS_PORT),
-
+export const bullmqConnection = new Redis(process.env.REDIS_URL!, {
   maxRetriesPerRequest: null,
-};
+});
