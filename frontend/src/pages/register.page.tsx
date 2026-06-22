@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2, MessageSquare } from "lucide-react";
-
+import axios from "axios";
 import { useRegister } from "../hooks/useRegister";
 
 export default function RegisterPage() {
@@ -11,13 +11,15 @@ export default function RegisterPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+const [serverError, setServerError] = useState("");
   const [errors, setErrors] = useState({
     email: "",
     password: "",
   });
 
   async function submit() {
+    setServerError("");
+
     const newErrors = {
       email: "",
       password: "",
@@ -44,7 +46,16 @@ export default function RegisterPage() {
       });
 
       navigate("/dashboard");
-    } catch {}
+    } catch (error: unknown) {
+      console.log(error);
+
+      if (axios.isAxiosError(error)) {
+        setServerError(error.response?.data?.message || "Registration failed");
+        return;
+      }
+
+      setServerError("Registration failed");
+    }
   }
 
   return (
@@ -63,7 +74,7 @@ export default function RegisterPage() {
         className="
           absolute
           inset-0
-          bg-gradient-to-b
+          bg-linear-to-b
           from-zinc-900/30
           via-transparent
           to-transparent
@@ -94,7 +105,7 @@ export default function RegisterPage() {
             bg-[#171717]
             border
             border-zinc-800
-            rounded-[32px]
+            rounded-4xl
             p-8
             md:p-10
             shadow-2xl
@@ -156,6 +167,12 @@ export default function RegisterPage() {
                 <p className="text-red-500 text-sm mt-2">{errors.password}</p>
               )}
             </div>
+
+            {serverError && (
+              <div className="rounded-xl bg-red-500/10 border border-red-500/30 p-3">
+                <p className="text-red-500 text-sm">{serverError}</p>
+              </div>
+            )}
 
             <button
               disabled={register.isPending}
