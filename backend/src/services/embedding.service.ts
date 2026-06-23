@@ -1,14 +1,18 @@
-import { pipeline, FeatureExtractionPipeline } from "@xenova/transformers";
+import { pipeline } from "@xenova/transformers";
 
-let extractor: FeatureExtractionPipeline | null = null;
+type FeatureExtractor = Awaited<
+  ReturnType<typeof pipeline<"feature-extraction">>
+>;
+
+let extractor: FeatureExtractor | null = null;
 
 export class EmbeddingService {
-  private async getExtractor(): Promise<FeatureExtractionPipeline> {
+  private async getExtractor(): Promise<FeatureExtractor> {
     if (!extractor) {
-      extractor = (await pipeline(
+      extractor = await pipeline(
         "feature-extraction",
         "Xenova/all-MiniLM-L6-v2",
-      )) as FeatureExtractionPipeline;
+      );
     }
 
     return extractor;
@@ -17,27 +21,16 @@ export class EmbeddingService {
   public async createEmbedding(text: string): Promise<number[]> {
     const model = await this.getExtractor();
 
-    const output = await model(text, {
-      pooling: "mean",
-      normalize: true,
-    });
+    const output = await model(text);
 
-    const embedding = output.tolist() as number[];
+    const values = output.tolist();
 
-    if (embedding.length !== 384) {
-      throw new Error(`Expected 384 dimensions, got ${embedding.length}`);
-    }
+    const embedding = values[0] as number[];
 
-    return embedding;
+    return embedding.slice(0, 384);
   }
 
   public async createEmbeddings(texts: string[]): Promise<number[][]> {
-    const embeddings: number[][] = [];
-
-    for (const text of texts) {
-      embeddings.push(await this.createEmbedding(text));
-    }
-
-    return embeddings;
+    return Promise.all(texts.map((text) => this.createEmbedding(text)));
   }
 }
