@@ -1,20 +1,30 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { env } from "../config/env.js";
+import { pipeline } from "@xenova/transformers";
 
-const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-
+let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
 export class EmbeddingService {
-  private readonly model = genAI.getGenerativeModel({
-    model: "text-embedding-004",
-  });
+  private async getExtractor() {
+    if (!extractor) {
+      extractor = await pipeline(
+        "feature-extraction",
+        "Xenova/all-MiniLM-L6-v2",
+      );
+    }
+
+    return extractor;
+  }
 
   public async createEmbedding(text: string): Promise<number[]> {
-    const result = await this.model.embedContent(text);
+    const model = await this.getExtractor();
 
-    const embedding = result.embedding.values;
+    const output = await model(text, {
+      pooling: "mean",
+      normalize: true,
+    });
 
-    if (!Array.isArray(embedding) || embedding.length === 0) {
-      throw new Error("Invalid embedding returned");
+    const embedding = Array.from(output.data) as number[];
+
+    if (!embedding.length) {
+      throw new Error("Failed to generate embedding");
     }
 
     if (embedding.length === 768) {
