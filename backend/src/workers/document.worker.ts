@@ -1,5 +1,4 @@
 import { Worker, Job } from "bullmq";
-
 import { PDFParse } from "pdf-parse";
 
 import { bullmqConnection } from "../config/bullmq.js";
@@ -7,18 +6,20 @@ import { bullmqConnection } from "../config/bullmq.js";
 import { splitText } from "../utils/chunking.js";
 
 import { DocumentRepository } from "../repositories/document.repository.js";
-
 import { DocumentChunkRepository } from "../repositories/documentChunk.repository.js";
+
+import { EmbeddingService } from "../services/embedding.service.js";
 
 interface DocumentJobData {
   documentId: string;
-
   pdfBase64: string;
 }
 
 const documents = new DocumentRepository();
 
 const chunksRepo = new DocumentChunkRepository();
+
+const embeddingService = new EmbeddingService();
 
 async function processDocument(job: Job<DocumentJobData>): Promise<void> {
   const { documentId, pdfBase64 } = job.data;
@@ -48,6 +49,8 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
       throw new Error("PDF text extraction failed");
     }
 
+    await documents.updateExtractedText(documentId, rawText);
+
     const chunks = (await splitText(rawText)).filter(
       (chunk) => chunk.trim().length > 0,
     );
@@ -58,10 +61,11 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
 
     console.log(`Generated ${chunks.length} chunks`);
 
-    /*
-      REMOVE GEMINI EMBEDDINGS
-      because API is failing
-    */
+    console.log("Generating embeddings...");
+
+    const embeddings = await embeddingService.createEmbeddings(chunks);
+
+    console.log(`Generated ${embeddings.length} embeddings`);
 
     await chunksRepo.createMany(
       chunks.map((content, index) => ({
@@ -69,10 +73,7 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
 
         content,
 
-        /*
-            pgvector requires 768 dimensions
-          */
-        embedding: new Array(768).fill(0),
+        embedding: embeddings[index],
 
         metadata: {
           filename: document.filename,
@@ -96,12 +97,9 @@ async function processDocument(job: Job<DocumentJobData>): Promise<void> {
 
 export const documentWorker = new Worker<DocumentJobData>(
   "document-processing",
-
   processDocument,
-
   {
     connection: bullmqConnection,
-
     concurrency: 2,
   },
 );

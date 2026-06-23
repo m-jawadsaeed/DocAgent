@@ -16,7 +16,7 @@ export const llm = new ChatGoogleGenerativeAI({
 
   temperature: 0,
 
-  maxOutputTokens: 8192,
+  maxOutputTokens: 4096,
 
   topP: 0.95,
 

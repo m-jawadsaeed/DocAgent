@@ -88,7 +88,7 @@ export class DocumentChunkRepository {
           dc.embedding <=>
           ${vectorLiteral}::vector
         )
-      ) > 0.65
+      ) > 0.45
 
       ORDER BY
       dc.embedding <=>

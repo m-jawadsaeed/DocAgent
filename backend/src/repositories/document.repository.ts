@@ -44,6 +44,16 @@ export class DocumentRepository {
       },
     });
   }
+  public async updateExtractedText(documentId: string, text: string) {
+    return prisma.document.update({
+      where: {
+        id: documentId,
+      },
+      data: {
+        extractedText: text,
+      },
+    });
+  }
 
   public async delete(documentId: string, userId: string) {
     return prisma.document.deleteMany({

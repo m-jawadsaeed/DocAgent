@@ -1,10 +1,13 @@
 import { tool } from "@langchain/core/tools";
-
 import { z } from "zod";
 
-import { prisma } from "../config/prisma.js";
-
 import { getToolContext } from "./tool-context.js";
+
+import { EmbeddingService } from "../services/embedding.service.js";
+import { DocumentChunkRepository } from "../repositories/documentChunk.repository.js";
+
+const embeddingService = new EmbeddingService();
+const chunkRepository = new DocumentChunkRepository();
 
 export const documentSearchTool = tool(
   async ({ question }) => {
@@ -14,59 +17,52 @@ export const documentSearchTool = tool(
       throw new Error("User context not available");
     }
 
-    const documents = await prisma.document.findMany({
-      where: {
-        userId: context.userId,
+    try {
+      // Create embedding for user query
+      const queryEmbedding = await embeddingService.createEmbedding(question);
 
-        status: "READY",
-      },
+      // Search similar chunks from pgvector
+      const chunks = await chunkRepository.similaritySearch(
+        context.userId,
+        queryEmbedding,
+        8,
+      );
 
-      select: {
-        filename: true,
+      if (chunks.length === 0) {
+        return JSON.stringify({
+          context: "No relevant document content found",
+          citations: [],
+        });
+      }
 
-        extractedText: true,
-      },
-
-      take: 5,
-    });
-
-    if (documents.length === 0) {
       return JSON.stringify({
-        context: "No documents available",
+        context: chunks
+          .map(
+            (chunk) =>
+              `DOCUMENT: ${chunk.filename}\n${chunk.content.slice(0, 1500)}`,
+          )
+          .join("\n\n"),
 
+        citations: chunks.map((chunk) => ({
+          filename: chunk.filename,
+          similarity: Number(chunk.similarity),
+          excerpt: chunk.content.slice(0, 500),
+        })),
+      });
+    } catch (error) {
+      console.error("Document search failed:", error);
+
+      return JSON.stringify({
+        context: "Document search failed",
         citations: [],
       });
     }
-
-    const matchedDocs = documents
-      .filter((doc) =>
-        doc.extractedText?.toLowerCase().includes(question.toLowerCase()),
-      )
-      .map((doc) => ({
-        filename: doc.filename,
-
-        excerpt: doc.extractedText?.slice(0, 2000) ?? "",
-      }));
-
-    return JSON.stringify({
-      context: matchedDocs
-        .map((doc) => `DOCUMENT: ${doc.filename}\n${doc.excerpt}`)
-        .join("\n\n"),
-
-      citations: matchedDocs.map((doc) => ({
-        filename: doc.filename,
-
-        similarity: 1,
-
-        excerpt: doc.excerpt,
-      })),
-    });
   },
-
   {
     name: "document_search",
 
-    description: "Search uploaded documents for relevant information",
+    description:
+      "Search uploaded documents using semantic vector similarity search",
 
     schema: z.object({
       question: z.string(),
