@@ -1,40 +1,34 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../config/env.js";
 
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+
 export class EmbeddingService {
-  async createEmbedding(text: string): Promise<number[]> {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: {
-            parts: [
-              {
-                text,
-              },
-            ],
-          },
-        }),
-      },
-    );
+  private readonly model = genAI.getGenerativeModel({
+    model: "text-embedding-004",
+  });
 
-    if (!response.ok) {
-      const error = await response.text();
+  public async createEmbedding(text: string): Promise<number[]> {
+    const result = await this.model.embedContent(text);
 
-      throw new Error(error);
+    const embedding = result.embedding.values;
+
+    if (!Array.isArray(embedding) || embedding.length === 0) {
+      throw new Error("Invalid embedding returned");
     }
 
-    const data = await response.json();
+    if (embedding.length === 768) {
+      return embedding;
+    }
 
-    const embedding = data.embedding.values as number[];
+    if (embedding.length > 768) {
+      return embedding.slice(0, 768);
+    }
 
-    return embedding;
+    return [...embedding, ...new Array(768 - embedding.length).fill(0)];
   }
 
-  async createEmbeddings(texts: string[]): Promise<number[][]> {
+  public async createEmbeddings(texts: string[]): Promise<number[][]> {
     return Promise.all(texts.map((text) => this.createEmbedding(text)));
   }
 }
