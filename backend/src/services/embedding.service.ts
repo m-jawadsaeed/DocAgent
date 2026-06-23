@@ -1,44 +1,32 @@
-import { pipeline } from "@xenova/transformers";
+import OpenAI from "openai";
+import { env } from "../config/env.js";
 
-let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
+const openai = new OpenAI({
+  apiKey: env.OPENAI_API_KEY,
+});
+
 export class EmbeddingService {
-  private async getExtractor() {
-    if (!extractor) {
-      extractor = await pipeline(
-        "feature-extraction",
-        "Xenova/all-MiniLM-L6-v2",
-      );
-    }
-
-    return extractor;
-  }
-
   public async createEmbedding(text: string): Promise<number[]> {
-    const model = await this.getExtractor();
-
-    const output = await model(text, {
-      pooling: "mean",
-      normalize: true,
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text,
     });
 
-    const embedding = Array.from(output.data) as number[];
+    const embedding = response.data[0]?.embedding;
 
-    if (!embedding.length) {
-      throw new Error("Failed to generate embedding");
+    if (!embedding || embedding.length === 0) {
+      throw new Error("Embedding generation failed");
     }
 
-    if (embedding.length === 768) {
-      return embedding;
-    }
-
-    if (embedding.length > 768) {
-      return embedding.slice(0, 768);
-    }
-
-    return [...embedding, ...new Array(768 - embedding.length).fill(0)];
+    return embedding;
   }
 
   public async createEmbeddings(texts: string[]): Promise<number[][]> {
-    return Promise.all(texts.map((text) => this.createEmbedding(text)));
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small",
+      input: texts,
+    });
+
+    return response.data.map((item) => item.embedding);
   }
 }
