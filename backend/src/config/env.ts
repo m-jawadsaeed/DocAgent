@@ -11,7 +11,7 @@ const schema = z.object({
   OPENAI_API_KEY: z.string(),
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
-
+  JINA_API_KEY: z.string(),
   ACCESS_TOKEN_EXPIRES_IN: z.string(),
   REFRESH_TOKEN_EXPIRES_IN: z.string(),
   GEMINI_API_KEY: z.string(),

@@ -1,36 +1,46 @@
-import { pipeline } from "@xenova/transformers";
+import axios from "axios";
+import { env } from "../config/env.js";
 
-type FeatureExtractor = Awaited<
-  ReturnType<typeof pipeline<"feature-extraction">>
->;
-
-let extractor: FeatureExtractor | null = null;
+interface JinaEmbeddingResponse {
+  data: Array<{
+    embedding: number[];
+  }>;
+}
 
 export class EmbeddingService {
-  private async getExtractor(): Promise<FeatureExtractor> {
-    if (!extractor) {
-      extractor = await pipeline(
-        "feature-extraction",
-        "Xenova/all-MiniLM-L6-v2",
-      );
-    }
-
-    return extractor;
-  }
-
   public async createEmbedding(text: string): Promise<number[]> {
-    const model = await this.getExtractor();
+    const response = await axios.post<JinaEmbeddingResponse>(
+      "https://api.jina.ai/v1/embeddings",
+      {
+        model: "jina-embeddings-v3",
+        input: [text],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${env.JINA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
 
-    const output = await model(text);
-
-    const values = output.tolist();
-
-    const embedding = values[0] as number[];
-
-    return embedding.slice(0, 384);
+    return response.data.data[0].embedding;
   }
 
   public async createEmbeddings(texts: string[]): Promise<number[][]> {
-    return Promise.all(texts.map((text) => this.createEmbedding(text)));
+    const response = await axios.post<JinaEmbeddingResponse>(
+      "https://api.jina.ai/v1/embeddings",
+      {
+        model: "jina-embeddings-v3",
+        input: texts,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${env.JINA_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    return response.data.data.map((item) => item.embedding);
   }
 }
