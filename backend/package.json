@@ -16,7 +16,7 @@
     "@google/generative-ai": "^0.24.1",
     "@langchain/core": "^1.1.49",
     "@langchain/google-genai": "^2.2.0",
-    "@langchain/langgraph": "^1.4.2",
+    "@langchain/langgraph": "^1.4.8",
     "@langchain/textsplitters": "^1.0.1",
     "@prisma/client": "^6.10.1",
     "axios": "^1.18.1",
