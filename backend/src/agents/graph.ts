@@ -69,6 +69,7 @@ function shouldContinue(
   const lastMessage = state.messages[state.messages.length - 1];
 
   if (
+    console.log(helo)
     "tool_calls" in lastMessage &&
     Array.isArray(lastMessage.tool_calls) &&
     lastMessage.tool_calls.length > 0
